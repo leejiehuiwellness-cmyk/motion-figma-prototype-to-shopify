@@ -276,6 +276,13 @@ h3 {
   grid-template-columns: minmax(0, 0.92fr) minmax(320px, 1.08fr);
 }
 
+.intro-grid > *,
+.two-column > *,
+.split-band > *,
+.download > * {
+  min-width: 0;
+}
+
 .section p {
   color: var(--muted);
   max-width: 760px;
@@ -297,6 +304,8 @@ h3 {
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: var(--shadow);
+  max-width: 100%;
+  min-width: 0;
 }
 
 .code-window {
@@ -327,6 +336,7 @@ h3 {
 }
 
 pre {
+  max-width: 100%;
   margin: 0;
   overflow-x: auto;
   padding: 22px;
