@@ -71,6 +71,9 @@ for (const script of scripts) {
   "codeMode",
   "Copy Code",
   "scheduleAfterTimeoutsForState",
+  "prepareDestinationDiffs",
+  "playPreparedDiffs",
+  "muteSourceDiffs",
   "window.gsap",
   "ON_CLICK",
   "ON_HOVER",
@@ -205,9 +208,13 @@ assert(!exportedCss.content.includes("font-family: Inter"), "Generated CSS shoul
 assert(exportedJs.content.includes("function changeVariant"), "Optional JS copy missing real variant switching");
 assert(exportedJs.content.includes("scheduleAfterTimeoutsForState"), "Runtime should schedule AFTER_TIMEOUT from the active state only");
 assert(exportedJs.content.includes("afterTimeoutInteractions.push"), "Runtime should collect state-scoped AFTER_TIMEOUT interactions");
+assert(exportedJs.content.includes("prepareDestinationDiffs"), "Runtime should prepare destination layers for smooth Smart Animate playback");
+assert(exportedJs.content.includes("playPreparedDiffs"), "Runtime should play destination-layer Smart Animate diffs");
+assert(exportedJs.content.includes("muteSourceDiffs"), "Runtime should hide matched source layers to avoid frame-by-frame ghosting");
 assert(exportedJs.content.includes("window.gsap"), "Runtime should support optional GSAP enhancement when the theme already loads GSAP");
 assert(!exportedJs.content.includes("interaction.trigger === 'ON_CLICK'"), "Runtime should not discard Figma timed interactions for reduced-motion shortcuts");
 assert(!exportedJs.content.includes("root.style.opacity = '0.94'"), "Runtime must not fake dissolve with root opacity");
+assert(parsedManifest.interactions.some((item) => item.actions.some((action) => (action.diffs || []).some((diff) => diff.destinationNodeId && typeof diff.fromScaleX === "number"))), "Smart Animate diffs should include destination-layer start values");
 
 const componentSetResult = await runComponentSetSmokeTest(code, ui, "set");
 assertComponentSetExport(componentSetResult, "COMPONENT_SET");
@@ -672,6 +679,8 @@ function assertComponentSetExport(exportMessage, selectedType) {
   assert(css.content.includes(".fts-variant {"), "CSS missing variant stacking");
   assert(js.content.includes("function changeVariant"), "Runtime missing changeVariant");
   assert(js.content.includes("scheduleAfterTimeoutsForState"), "Runtime missing state-scoped AFTER_TIMEOUT scheduling");
+  assert(js.content.includes("prepareDestinationDiffs"), "Runtime missing destination-layer Smart Animate preparation");
+  assert(js.content.includes("muteSourceDiffs"), "Runtime missing matched source-layer muting");
   assert(js.content.includes("window.gsap"), "Runtime missing optional GSAP enhancement");
   assert(js.content.includes("shopify:section:load"), "Runtime missing Shopify load lifecycle");
   assert(js.content.includes("shopify:section:unload"), "Runtime missing Shopify unload lifecycle");

@@ -20,7 +20,7 @@ Primary references:
 | Action | What happens after the trigger | Supported subset is compiled; unsupported actions are reported |
 | Destination | Target frame, overlay, URL, or state | Target frames are read when available |
 | Animation / transition | Visual movement between states | Supported transitions become CSS/JS motion |
-| Smart Animate | Matching layer animation between frames, components, instances, or variants | Converted by comparing matching layer names and hierarchy |
+| Smart Animate | Matching layer animation between frames, components, instances, or variants | Converted by comparing matching layer names and hierarchy, then animating destination layers from source geometry to final geometry |
 | Overlay | Floating destination above current frame | Exported as hidden overlay markup with JS open/close |
 | Overflow / scrolling | Prototype viewport scroll behavior | Reported in v1; not compiled as scroll-linked Shopify behavior |
 | Device preview | Prototype presentation shell | Not relevant to Shopify export |
@@ -69,11 +69,12 @@ The export report includes a `prototypeReactions` array with the raw interaction
 | Move in / move out | Supported approximation | CSS transform translate |
 | Push | Supported approximation | CSS transform translate |
 | Slide in / slide out | Supported approximation | CSS transform translate |
-| Smart Animate position | Supported | `translate(x, y)` |
-| Smart Animate size | Supported approximation | `scale(x, y)` when safe |
-| Smart Animate rotation | Supported | `rotate()` |
-| Smart Animate opacity | Supported | `opacity` |
-| Smart Animate solid fill color | Supported | `background-color` |
+| Smart Animate position | Supported | Destination layer starts at source position, then `translate()` returns to final state |
+| Smart Animate size | Supported approximation | Destination layer starts at source scale, then `scale()` returns to final state |
+| Smart Animate rotation | Supported | Destination layer starts at source rotation, then `rotate()` returns to final state |
+| Smart Animate opacity | Supported | Destination layer interpolates from source opacity to final opacity |
+| Smart Animate solid fill color | Supported | Destination layer interpolates from source fill to final `background-color` |
+| Smart Animate corner radius | Supported | Destination layer interpolates from source radius to final radius |
 | Custom cubic bezier easing | Supported | CSS `cubic-bezier()` |
 | Ease in / ease out / ease in-out | Supported | CSS easing keyword |
 | Spring animation | Approximation | Smooth cubic bezier and report note |
@@ -85,7 +86,7 @@ The export report includes a `prototypeReactions` array with the raw interaction
 
 1. Use one clean top-level frame, component, instance, or variant for the Shopify section.
 2. Designers may select a child layer inside a component; Motion will export the nearest supported component/instance ancestor.
-3. Keep source and destination layer names consistent for Smart Animate.
+3. Keep source and destination layer names consistent for Smart Animate. Motion matches by path, layer name, structure, and type so the Shopify playback can move the destination layer smoothly instead of flashing through state screenshots.
 4. Use Auto Layout when possible.
 5. Use layer names for Liquid binding.
 6. Avoid relying on prototype-only variables or conditionals in v1.

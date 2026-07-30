@@ -77,6 +77,7 @@ Designers often build Shopify sections as components or variants. Motion support
 - Select a child layer inside a component or instance, such as `product.title` or `product.add_to_cart`; Motion automatically exports the nearest component/instance ancestor.
 - Select a variant component to export its parent Component Set. Motion exports every direct component variant and uses one responsive stage with overlaid states instead of placing variants side by side.
 - Prototype `CHANGE_TO` / Smart Animate-style state changes are compiled as real source-to-destination variant switches by exact Figma node ID when matching layer names and hierarchy are consistent.
+- Smart Animate playback now prepares matching destination layers from the source layer geometry, then moves/scales/rotates/fades them into their final Shopify state. This avoids the old "frame-by-frame slideshow" feeling for designer-built component animation chains.
 - The export report records both the selected layer and the actual export root so builders can verify the component boundary before pasting into Shopify.
 
 ## Shopify Theme Font Inheritance
@@ -109,7 +110,7 @@ The plugin reads Figma prototype reactions and compiles the practical subset nee
 - Triggers: click/tap, hover, press, mouse enter, mouse leave, mouse down, mouse up, after delay.
 - Actions: navigate, swap, change to, open overlay, back, close, URL.
 - Transitions: dissolve, directional movement, push/slide-style movement, and Smart Animate-like matching layer diffs.
-- Smart Animate diffs: position, scale, rotation, opacity, and solid fill color.
+- Smart Animate diffs: position, scale, rotation, opacity, solid fill color, and corner radius, played as destination-layer interpolation instead of whole-frame snapshots.
 
 Unsupported prototype features are preserved in `motion-figma-prototype-to-shopify-report.json` as raw reaction data and warnings.
 

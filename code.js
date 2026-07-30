@@ -817,13 +817,19 @@
       var dest = destinationMap[key];
       if (!dest) return;
 
-      var diff = { nodeId: source.id };
+      var diff = {
+        nodeId: source.id,
+        sourceNodeId: source.id,
+        destinationNodeId: dest.id
+      };
       var changed = false;
       var dx = round(dest.x - source.x, 3);
       var dy = round(dest.y - source.y, 3);
       if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
         diff.x = dx;
         diff.y = dy;
+        diff.fromX = round(source.x - dest.x, 3);
+        diff.fromY = round(source.y - dest.y, 3);
         changed = true;
       }
 
@@ -833,6 +839,8 @@
         if (Math.abs(scaleX - 1) > 0.01 || Math.abs(scaleY - 1) > 0.01) {
           diff.scaleX = scaleX;
           diff.scaleY = scaleY;
+          diff.fromScaleX = round(source.width / dest.width, 4);
+          diff.fromScaleY = round(source.height / dest.height, 4);
           diff.width = round(dest.width, 3);
           diff.height = round(dest.height, 3);
           changed = true;
@@ -842,11 +850,14 @@
       var rotation = round(dest.rotation - source.rotation, 3);
       if (Math.abs(rotation) > 0.5) {
         diff.rotation = rotation;
+        diff.fromRotation = round(source.rotation - dest.rotation, 3);
         changed = true;
       }
 
       if (Math.abs(dest.opacity - source.opacity) > 0.01) {
         diff.opacity = round(dest.opacity, 3);
+        diff.fromOpacity = round(source.opacity, 3);
+        diff.toOpacity = round(dest.opacity, 3);
         changed = true;
       }
 
@@ -854,11 +865,15 @@
       var destFill = firstSolidColor(dest.fills);
       if (sourceFill && destFill && sourceFill !== destFill) {
         diff.backgroundColor = destFill;
+        diff.fromBackgroundColor = sourceFill;
+        diff.toBackgroundColor = destFill;
         changed = true;
       }
 
       if (Math.abs((dest.cornerRadius || 0) - (source.cornerRadius || 0)) > 0.5) {
         diff.borderRadius = round(dest.cornerRadius || 0, 3);
+        diff.fromBorderRadius = round(source.cornerRadius || 0, 3);
+        diff.toBorderRadius = round(dest.cornerRadius || 0, 3);
         changed = true;
       }
 
@@ -1459,6 +1474,7 @@
     lines.push("  position: relative;");
     lines.push("}");
     lines.push("." + classPrefix + " *, ." + classPrefix + " *::before, ." + classPrefix + " *::after { box-sizing: border-box; }");
+    lines.push("." + classPrefix + " .fts-node { transform-origin: top left; backface-visibility: hidden; }");
     lines.push("." + classPrefix + " img { display: block; width: 100%; height: 100%; object-fit: cover; }");
     lines.push("." + classPrefix + " a { color: inherit; text-decoration: none; }");
     lines.push("." + classPrefix + " button { font: inherit; color: inherit; cursor: pointer; border: 0; background: transparent; }");
@@ -1632,6 +1648,9 @@
       "    var afterTimeoutInteractions = [];",
       "    var tweens = [];",
       "    var originals = new Map();",
+      "    var activePreparedLayers = [];",
+      "    var activeMutedLayers = [];",
+      "    var transitionTimer = null;",
       "    ensureActiveState();",
       "    function find(id) { return root.querySelector('[data-fts-node=\"' + cssEscape(id) + '\"]'); }",
       "    function findStateByFigmaId(id) { return root.querySelector('[data-figma-node-id=\"' + cssEscape(id) + '\"].fts-variant, .fts-variant[data-figma-node-id=\"' + cssEscape(id) + '\"]'); }",
@@ -1651,12 +1670,16 @@
       "    }",
       "    function activateOnly(state) {",
       "      killTweens();",
-      "      root.querySelectorAll('.fts-variant').forEach(function (item) { setStateActive(item, item === state); item.style.opacity = ''; item.style.visibility = ''; item.style.transition = ''; });",
+      "      root.querySelectorAll('.fts-variant').forEach(function (item) { setStateActive(item, item === state); item.style.opacity = ''; item.style.visibility = ''; item.style.transition = ''; item.style.pointerEvents = ''; });",
       "      scheduleAfterTimeoutsForState(state, 0);",
       "    }",
       "    function clearStateTimers() {",
       "      stateTimers.forEach(function (id) { window.clearTimeout(id); });",
       "      stateTimers = [];",
+      "    }",
+      "    function clearTransitionTimer() {",
+      "      if (transitionTimer !== null) window.clearTimeout(transitionTimer);",
+      "      transitionTimer = null;",
       "    }",
       "    function scheduleAfterTimeoutsForState(state, waitMs) {",
       "      clearStateTimers();",
@@ -1676,6 +1699,8 @@
       "        var tween = tweens.pop();",
       "        if (tween && typeof tween.kill === 'function') tween.kill();",
       "      }",
+      "      clearTransitionTimer();",
+      "      clearMotionStyles();",
       "    }",
       "    function toGsapEase(ease) {",
       "      var value = String(ease || '').toLowerCase();",
@@ -1686,16 +1711,105 @@
       "      return 'power1.out';",
       "    }",
       "    function remember(el) {",
-      "      if (!originals.has(el)) originals.set(el, { transform: el.style.transform || '', opacity: el.style.opacity || '', backgroundColor: el.style.backgroundColor || '', borderRadius: el.style.borderRadius || '', width: el.style.width || '', height: el.style.height || '' });",
+      "      if (!originals.has(el)) originals.set(el, { transform: el.style.transform || '', opacity: el.style.opacity || '', backgroundColor: el.style.backgroundColor || '', borderRadius: el.style.borderRadius || '', width: el.style.width || '', height: el.style.height || '', transition: el.style.transition || '', willChange: el.style.willChange || '' });",
+      "    }",
+      "    function restoreOriginal(el) {",
+      "      var original = el && originals.get(el);",
+      "      if (!el || !original) return;",
+      "      el.style.transform = original.transform;",
+      "      el.style.opacity = original.opacity;",
+      "      el.style.backgroundColor = original.backgroundColor;",
+      "      el.style.borderRadius = original.borderRadius;",
+      "      el.style.width = original.width;",
+      "      el.style.height = original.height;",
+      "      el.style.transition = original.transition;",
+      "      el.style.willChange = original.willChange;",
+      "    }",
+      "    function clearMotionStyles() {",
+      "      activePreparedLayers.forEach(function (item) { restoreOriginal(item.el); });",
+      "      activeMutedLayers.forEach(function (item) { restoreOriginal(item.el); });",
+      "      activePreparedLayers = [];",
+      "      activeMutedLayers = [];",
       "    }",
       "    function transitionFor(diff) {",
       "      var duration = Math.max(0, Number(diff.duration || 0));",
       "      var ease = diff.ease || 'ease';",
       "      return 'transform ' + duration + 'ms ' + ease + ', opacity ' + duration + 'ms ' + ease + ', background-color ' + duration + 'ms ' + ease + ', border-radius ' + duration + 'ms ' + ease + ', width ' + duration + 'ms ' + ease + ', height ' + duration + 'ms ' + ease;",
       "    }",
+      "    function numeric(value, fallback) { return typeof value === 'number' && isFinite(value) ? value : fallback; }",
+      "    function inverseScale(value) { return value && isFinite(value) ? 1 / value : 1; }",
+      "    function transformString(x, y, scaleX, scaleY, rotation) {",
+      "      var transforms = [];",
+      "      if (Math.abs(x || 0) > 0.01 || Math.abs(y || 0) > 0.01) transforms.push('translate(' + (x || 0) + 'px, ' + (y || 0) + 'px)');",
+      "      if (Math.abs((scaleX || 1) - 1) > 0.001 || Math.abs((scaleY || 1) - 1) > 0.001) transforms.push('scale(' + (scaleX || 1) + ', ' + (scaleY || 1) + ')');",
+      "      if (Math.abs(rotation || 0) > 0.01) transforms.push('rotate(' + rotation + 'deg)');",
+      "      return transforms.join(' ');",
+      "    }",
+      "    function prepareDestinationDiff(diff, reverse) {",
+      "      var targetId = reverse ? (diff.sourceNodeId || diff.nodeId) : (diff.destinationNodeId || diff.nodeId);",
+      "      var el = find(targetId);",
+      "      if (!el || !diff.destinationNodeId) return null;",
+      "      remember(el);",
+      "      var fromX = reverse ? numeric(diff.x, -numeric(diff.fromX, 0)) : numeric(diff.fromX, -numeric(diff.x, 0));",
+      "      var fromY = reverse ? numeric(diff.y, -numeric(diff.fromY, 0)) : numeric(diff.fromY, -numeric(diff.y, 0));",
+      "      var fromScaleX = reverse ? numeric(diff.scaleX, inverseScale(diff.fromScaleX)) : numeric(diff.fromScaleX, inverseScale(diff.scaleX));",
+      "      var fromScaleY = reverse ? numeric(diff.scaleY, inverseScale(diff.fromScaleY)) : numeric(diff.fromScaleY, inverseScale(diff.scaleY));",
+      "      var fromRotation = reverse ? numeric(diff.rotation, -numeric(diff.fromRotation, 0)) : numeric(diff.fromRotation, -numeric(diff.rotation, 0));",
+      "      var fromOpacity = reverse ? numeric(diff.toOpacity, diff.opacity) : diff.fromOpacity;",
+      "      var fromBackgroundColor = reverse ? (diff.toBackgroundColor || diff.backgroundColor) : diff.fromBackgroundColor;",
+      "      var fromBorderRadius = reverse ? numeric(diff.toBorderRadius, diff.borderRadius) : diff.fromBorderRadius;",
+      "      el.style.transition = 'none';",
+      "      el.style.willChange = 'transform, opacity';",
+      "      var transform = transformString(fromX, fromY, fromScaleX, fromScaleY, fromRotation);",
+      "      if (transform) el.style.transform = transform;",
+      "      if (typeof fromOpacity === 'number') el.style.opacity = String(fromOpacity);",
+      "      if (fromBackgroundColor) el.style.backgroundColor = fromBackgroundColor;",
+      "      if (typeof fromBorderRadius === 'number') el.style.borderRadius = fromBorderRadius + 'px';",
+      "      return { el: el, diff: diff, reverse: reverse };",
+      "    }",
+      "    function prepareDestinationDiffs(diffs, reverse) {",
+      "      var prepared = [];",
+      "      (diffs || []).forEach(function (diff) {",
+      "        var item = prepareDestinationDiff(diff, reverse);",
+      "        if (item) prepared.push(item);",
+      "      });",
+      "      return prepared;",
+      "    }",
+      "    function playPreparedDiffs(prepared) {",
+      "      prepared.forEach(function (item) {",
+      "        var el = item.el;",
+      "        var diff = item.diff;",
+      "        var reverse = item.reverse;",
+      "        var original = originals.get(el);",
+      "        var finalOpacity = reverse ? diff.fromOpacity : diff.toOpacity;",
+      "        var finalBackgroundColor = reverse ? diff.fromBackgroundColor : (diff.toBackgroundColor || diff.backgroundColor);",
+      "        var finalBorderRadius = reverse ? diff.fromBorderRadius : numeric(diff.toBorderRadius, diff.borderRadius);",
+      "        el.style.transition = transitionFor(diff);",
+      "        el.style.transform = original ? original.transform : '';",
+      "        if (typeof finalOpacity === 'number') el.style.opacity = String(finalOpacity);",
+      "        else el.style.opacity = original ? original.opacity : '';",
+      "        if (finalBackgroundColor) el.style.backgroundColor = finalBackgroundColor;",
+      "        else el.style.backgroundColor = original ? original.backgroundColor : '';",
+      "        if (typeof finalBorderRadius === 'number') el.style.borderRadius = finalBorderRadius + 'px';",
+      "        else el.style.borderRadius = original ? original.borderRadius : '';",
+      "      });",
+      "    }",
+      "    function muteSourceDiffs(diffs, reverse) {",
+      "      var muted = [];",
+      "      (diffs || []).forEach(function (diff) {",
+      "        var sourceId = reverse ? (diff.destinationNodeId || diff.nodeId) : (diff.sourceNodeId || diff.nodeId);",
+      "        var el = find(sourceId);",
+      "        if (!el || !diff.destinationNodeId) return;",
+      "        remember(el);",
+      "        el.style.transition = 'none';",
+      "        el.style.opacity = '0';",
+      "        muted.push({ el: el, diff: diff, reverse: reverse });",
+      "      });",
+      "      return muted;",
+      "    }",
       "    function applyDiff(diff) {",
       "      var el = find(diff.nodeId);",
-      "      if (!el) return;",
+      "      if (!el) return null;",
       "      remember(el);",
       "      el.style.transition = transitionFor(diff);",
       "      var transforms = [];",
@@ -1708,11 +1822,12 @@
       "      if (typeof diff.borderRadius === 'number') el.style.borderRadius = diff.borderRadius + 'px';",
       "      if (typeof diff.width === 'number') el.style.width = diff.width + 'px';",
       "      if (typeof diff.height === 'number') el.style.height = diff.height + 'px';",
+      "      return el;",
       "    }",
       "    function resetDiff(diff) {",
       "      var el = find(diff.nodeId);",
       "      var original = el && originals.get(el);",
-      "      if (!el || !original) return;",
+      "      if (!el || !original) return null;",
       "      el.style.transition = transitionFor(diff);",
       "      el.style.transform = original.transform;",
       "      el.style.opacity = original.opacity;",
@@ -1720,6 +1835,7 @@
       "      el.style.borderRadius = original.borderRadius;",
       "      el.style.width = original.width;",
       "      el.style.height = original.height;",
+      "      return el;",
       "    }",
       "    function changeVariant(sourceNodeId, destinationNodeId, transition, diffs, reverse) {",
       "      var source = findStateByFigmaId(sourceNodeId) || activeState();",
@@ -1729,32 +1845,64 @@
       "      var ease = transition && transition.cssEase || transition && transition.ease || 'ease';",
       "      if (source === destination) { activateOnly(destination); return; }",
       "      clearStateTimers();",
-      "      if (source && diffs && diffs.length && !reverse) diffs.forEach(applyDiff);",
-      "      if (source && diffs && diffs.length && reverse) diffs.forEach(resetDiff);",
+      "      killTweens();",
+      "      root.querySelectorAll('.fts-variant.is-active').forEach(function (item) {",
+      "        if (item !== source && item !== destination) { setStateActive(item, false); item.style.opacity = ''; item.style.visibility = ''; item.style.transition = ''; item.style.pointerEvents = ''; }",
+      "      });",
+      "      var prepared = source && diffs && diffs.length ? prepareDestinationDiffs(diffs, reverse) : [];",
+      "      var muted = prepared.length && source ? muteSourceDiffs(diffs, reverse) : [];",
+      "      var sourceFadeDuration = prepared.length ? Math.min(duration, 180) : duration;",
+      "      var legacy = [];",
+      "      if (source && diffs && diffs.length && !prepared.length) {",
+      "        diffs.forEach(function (diff) {",
+      "          var el = reverse ? resetDiff(diff) : applyDiff(diff);",
+      "          if (el) legacy.push({ el: el, diff: diff, reverse: reverse });",
+      "        });",
+      "      }",
+      "      activePreparedLayers = prepared.length ? prepared : legacy;",
+      "      activeMutedLayers = muted;",
       "      var finished = false;",
       "      function finishStateChange() {",
       "        if (finished) return;",
       "        finished = true;",
+      "        clearMotionStyles();",
       "        if (source && source !== destination) {",
       "          setStateActive(source, false);",
       "          source.style.opacity = '';",
       "          source.style.visibility = '';",
       "          source.style.transition = '';",
+      "          source.style.pointerEvents = '';",
       "        }",
       "        destination.style.opacity = '';",
       "        destination.style.visibility = '';",
       "        destination.style.transition = '';",
       "        scheduleAfterTimeoutsForState(destination, 0);",
       "      }",
+      "      if (prepared.length) {",
+      "        destination.style.transition = 'none';",
+      "        destination.style.opacity = '1';",
+      "        destination.style.visibility = 'visible';",
+      "        setStateActive(destination, true);",
+      "        destination.getBoundingClientRect();",
+      "        playPreparedDiffs(prepared);",
+      "        if (source && source !== destination) {",
+      "          source.style.transition = 'opacity ' + sourceFadeDuration + 'ms ' + ease + ', visibility ' + sourceFadeDuration + 'ms ' + ease;",
+      "          source.style.opacity = '0';",
+      "          source.style.pointerEvents = 'none';",
+      "        }",
+      "        transitionTimer = window.setTimeout(function () { transitionTimer = null; finishStateChange(); }, duration);",
+      "        timers.push(transitionTimer);",
+      "        return;",
+      "      }",
       "      if (canUseGsap()) {",
       "        var gsap = window.gsap;",
-      "        killTweens();",
       "        gsap.set(destination, { autoAlpha: 0 });",
       "        setStateActive(destination, true);",
       "        var destinationTween = { autoAlpha: 1, duration: duration / 1000, ease: toGsapEase(ease), overwrite: 'auto', clearProps: 'opacity,visibility' };",
       "        if (!source || source === destination) destinationTween.onComplete = finishStateChange;",
       "        trackTween(gsap.to(destination, destinationTween));",
       "        if (source && source !== destination) {",
+      "          source.style.pointerEvents = 'none';",
       "          trackTween(gsap.to(source, { autoAlpha: 0, duration: duration / 1000, ease: toGsapEase(ease), overwrite: 'auto', onComplete: finishStateChange }));",
       "        }",
       "        return;",
@@ -1767,9 +1915,10 @@
       "      if (source && source !== destination) {",
       "        source.style.transition = 'opacity ' + duration + 'ms ' + ease + ', visibility ' + duration + 'ms ' + ease;",
       "        source.style.opacity = '0';",
+      "        source.style.pointerEvents = 'none';",
       "      }",
-      "      var done = window.setTimeout(finishStateChange, duration);",
-      "      timers.push(done);",
+      "      transitionTimer = window.setTimeout(function () { transitionTimer = null; finishStateChange(); }, duration);",
+      "      timers.push(transitionTimer);",
       "    }",
       "    function openOverlay(id) {",
       "      var overlay = root.querySelector('[data-fts-overlay=\"' + cssEscape(id) + '\"]');",
@@ -1808,6 +1957,8 @@
       "      if (trigger === 'ON_HOVER') {",
       "        add(el, 'mouseenter', function () { runInteraction(interaction, false); });",
       "        add(el, 'mouseleave', function () { runInteraction(interaction, true); });",
+      "        var hoverBoundary = root.querySelector('[data-fts-stage]') || root;",
+      "        if (hoverBoundary !== el) add(hoverBoundary, 'mouseleave', function () { runInteraction(interaction, true); });",
       "        return;",
       "      }",
       "      if (trigger === 'ON_DRAG' || trigger === 'DRAG') {",
@@ -2061,7 +2212,7 @@
         ? "6. Upload `assets/" + input.sectionType + ".css`, `assets/" + input.sectionType + ".js`, and every exported image/SVG asset into the theme `assets` folder."
         : "6. Upload only the exported image/SVG files referenced by the section into the theme `assets` folder. CSS and JavaScript are already inside the Liquid section.",
       "7. Add the section in the Shopify theme editor.",
-      "8. Pick color scheme, typography, font scale, product, collection, and menu settings if prompted.",
+      "8. Pick product, collection, and menu settings if prompted. Typography inherits from the Shopify theme automatically.",
       "",
       "## Copy Code mode",
       "",
@@ -2081,7 +2232,7 @@
       "",
       "- Click/tap, hover, press, mouse enter/leave, mouse down/up, and after-delay triggers.",
       "- Navigate, swap, overlay, change-to, URL, back, and close actions.",
-      "- Dissolve, directional movement, and Smart Animate-style diffs for position, scale, rotation, opacity, and solid fill color.",
+      "- Dissolve, directional movement, and Smart Animate-style destination-layer diffs for position, scale, rotation, opacity, solid fill color, and corner radius.",
       "",
       "## Warnings",
       "",

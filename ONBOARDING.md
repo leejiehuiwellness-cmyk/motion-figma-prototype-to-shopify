@@ -64,7 +64,7 @@ The plugin reads Figma prototype interaction details from the selected flow:
 - Animation: dissolve, movement, push/slide, Smart Animate-like matching layer changes.
 - Direction, duration, and easing.
 
-Keep names consistent between source and destination frames if you want Smart Animate-style conversion. Figma Smart Animate matches layers by name and hierarchy; this plugin follows the same idea for Shopify motion diffs.
+Keep names consistent between source and destination frames if you want Smart Animate-style conversion. Figma Smart Animate matches layers by name and hierarchy; this plugin follows the same idea for Shopify motion diffs. When a safe match exists, Motion animates the destination layer from the source layer geometry to its final Shopify geometry so component animation chains feel continuous instead of like separate frame snapshots.
 
 For the complete trigger/action/transition support table, read `PROTOTYPE_SUPPORT_MATRIX.md`. It follows Figma's official "Guide to prototyping in Figma" and the Figma Plugin API reaction model.
 
@@ -118,5 +118,6 @@ Check:
 - Menu links.
 - Cart count.
 - Click/hover/after-delay/overlay animation.
+- Smart Animate component/state motion should look like one smooth prototype playback, not a slideshow of separate exported states.
 - Reduced motion preference.
 - Conversion report warnings.

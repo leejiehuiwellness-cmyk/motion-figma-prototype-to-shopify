@@ -78,6 +78,7 @@ After saving, Shopify should render:
 - Inline CSS and JavaScript inside the generated Liquid section.
 - Font family, font style, and font weight inherited from the Shopify theme.
 - Supported Figma prototype animation such as click, hover, delay, overlay, and Smart Animate-style diffs.
+- Smoother component/state motion: matched destination layers animate from the source layer position, size, rotation, opacity, color, and radius instead of showing every Figma state as a separate frame.
 
 ## F. Common Fixes
 
@@ -89,3 +90,4 @@ After saving, Shopify should render:
 | Collection grid is blank | Choose Collection fallback in section settings. |
 | Menu is blank | Choose Main menu in section settings. |
 | Animation does not move | Check `motion-figma-prototype-to-shopify-report.json` for unsupported prototype features. |
+| Animation looks like a frame slideshow | Regenerate with the latest plugin and keep matching source/destination layer names consistent. The latest runtime uses destination-layer Smart Animate playback instead of whole-frame snapshots when safe layer matches are found. |

@@ -1,7 +1,7 @@
 {% comment %}
 Example output shape for Motion: Figma Prototype to Shopify.
 Paste this file into Shopify Admin > Online Store > Themes > Edit code > sections/motion-figma-prototype-to-shopify.liquid.
-Real plugin exports are generated from your selected Figma frame.
+Real plugin exports are generated from your selected Figma frame, component, component set, instance, or component child layer.
 {% endcomment %}
 {% liquid
   assign fts_product = product
@@ -14,27 +14,55 @@ Real plugin exports are generated from your selected Figma frame.
 %}
 
 <section class="fts-motion-figma-prototype-to-shopify" data-motion-figma-prototype-to-shopify>
-  <div class="fts-node n-example-root" data-fts-node="example-root">
-    <div class="fts-node n-product-image" data-fts-node="product-image">
-      {% if fts_product.featured_image %}
-        {{ fts_product.featured_image | image_url: width: 1200 | image_tag: loading: 'lazy' }}
-      {% endif %}
+  <div class="fts-stage" data-fts-stage style="--stage-width: 960; --stage-height: 420;">
+    <div class="fts-variant is-active" data-fts-state="state-default" data-figma-node-id="state-default" aria-hidden="false">
+      <div class="fts-node n-example-root" data-fts-node="example-root" data-figma-node-id="example-root">
+        <div class="fts-node n-product-image" data-fts-node="product-image" data-figma-node-id="product-image">
+          {% if fts_product.featured_image %}
+            {{ fts_product.featured_image | image_url: width: 1200 | image_tag: loading: 'lazy' }}
+          {% endif %}
+        </div>
+        <div class="fts-node n-product-copy" data-fts-node="product-copy" data-figma-node-id="product-copy">
+          <p class="fts-node n-product-vendor" data-fts-node="product-vendor" data-figma-node-id="product-vendor">{{ fts_product.vendor | escape }}</p>
+          <h2 class="fts-node n-product-title" data-fts-node="product-title" data-figma-node-id="product-title">{{ fts_product.title | escape }}</h2>
+          <p class="fts-node n-product-price" data-fts-node="product-price" data-figma-node-id="product-price">{{ fts_product.price | money }}</p>
+          <product-form class="fts-node n-product-add-to-cart" data-fts-node="product-add-to-cart" data-figma-node-id="product-add-to-cart">
+            {% form 'product', fts_product %}
+              <input type="hidden" name="id" value="{{ fts_product.selected_or_first_available_variant.id }}">
+              <button type="submit" {% unless fts_product.available %}disabled{% endunless %}>
+                Add to cart
+              </button>
+            {% endform %}
+          </product-form>
+        </div>
+      </div>
     </div>
-    <div class="fts-node n-product-copy" data-fts-node="product-copy">
-      <p class="fts-node n-product-vendor" data-fts-node="product-vendor">{{ fts_product.vendor | escape }}</p>
-      <h2 class="fts-node n-product-title" data-fts-node="product-title">{{ fts_product.title | escape }}</h2>
-      <p class="fts-node n-product-price" data-fts-node="product-price">{{ fts_product.price | money }}</p>
-      <product-form class="fts-node n-product-add-to-cart" data-fts-node="product-add-to-cart">
-        {% form 'product', fts_product %}
-          <input type="hidden" name="id" value="{{ fts_product.selected_or_first_available_variant.id }}">
-          <button type="submit" {% unless fts_product.available %}disabled{% endunless %}>
-            Add to cart
-          </button>
-        {% endform %}
-      </product-form>
+
+    <div class="fts-variant" data-fts-state="state-hover" data-figma-node-id="state-hover" aria-hidden="true">
+      <div class="fts-node n-example-root" data-fts-node="example-root-hover" data-figma-node-id="example-root-hover">
+        <div class="fts-node n-product-image" data-fts-node="product-image-hover" data-figma-node-id="product-image-hover">
+          {% if fts_product.featured_image %}
+            {{ fts_product.featured_image | image_url: width: 1200 | image_tag: loading: 'lazy' }}
+          {% endif %}
+        </div>
+        <div class="fts-node n-product-copy" data-fts-node="product-copy-hover" data-figma-node-id="product-copy-hover">
+          <p class="fts-node n-product-vendor" data-fts-node="product-vendor-hover" data-figma-node-id="product-vendor-hover">{{ fts_product.vendor | escape }}</p>
+          <h2 class="fts-node n-product-title" data-fts-node="product-title-hover" data-figma-node-id="product-title-hover">{{ fts_product.title | escape }}</h2>
+          <p class="fts-node n-product-price" data-fts-node="product-price-hover" data-figma-node-id="product-price-hover">{{ fts_product.price | money }}</p>
+          <product-form class="fts-node n-product-add-to-cart n-product-add-to-cart-hover" data-fts-node="product-add-to-cart-hover" data-figma-node-id="product-add-to-cart-hover">
+            {% form 'product', fts_product %}
+              <input type="hidden" name="id" value="{{ fts_product.selected_or_first_available_variant.id }}">
+              <button type="submit" {% unless fts_product.available %}disabled{% endunless %}>
+                Add to cart
+              </button>
+            {% endform %}
+          </product-form>
+        </div>
+      </div>
     </div>
   </div>
-  <script type="application/json" data-fts-motion-config>{"version":1,"interactions":[{"triggerNodeId":"product-add-to-cart","trigger":"ON_HOVER","delay":0,"reversible":true,"actions":[{"kind":"animate-to-state","destinationName":"Hover","transition":{"type":"SMART_ANIMATE","durationMs":220,"cssEase":"ease-out"},"diffs":[{"nodeId":"product-add-to-cart","scaleX":1.04,"scaleY":1.04,"duration":220,"ease":"ease-out"}]}]}]}</script>
+
+  <script type="application/json" data-fts-motion-config>{"version":1,"interactions":[{"triggerNodeId":"product-add-to-cart","trigger":"ON_HOVER","reversible":true,"actions":[{"kind":"change-variant","sourceNodeId":"state-default","destinationNodeId":"state-hover","transition":{"type":"SMART_ANIMATE","durationMs":420,"cssEase":"ease-out"},"diffs":[{"nodeId":"product-add-to-cart","sourceNodeId":"product-add-to-cart","destinationNodeId":"product-add-to-cart-hover","scaleX":1.08,"scaleY":1.08,"fromScaleX":0.9259,"fromScaleY":0.9259,"duration":420,"ease":"ease-out"}]}]}]}</script>
 </section>
 
 {% stylesheet %}
@@ -56,6 +84,15 @@ Real plugin exports are generated from your selected Figma frame.
   margin-right: calc(50% - 50dvw);
   padding: 48px 24px;
 }
+.fts-motion-figma-prototype-to-shopify *,
+.fts-motion-figma-prototype-to-shopify *::before,
+.fts-motion-figma-prototype-to-shopify *::after {
+  box-sizing: border-box;
+}
+.fts-motion-figma-prototype-to-shopify .fts-node {
+  transform-origin: top left;
+  backface-visibility: hidden;
+}
 .fts-motion-figma-prototype-to-shopify h1,
 .fts-motion-figma-prototype-to-shopify h2,
 .fts-motion-figma-prototype-to-shopify h3 {
@@ -63,14 +100,33 @@ Real plugin exports are generated from your selected Figma frame.
   font-style: var(--font-heading-style, var(--font-body-style, normal));
   font-weight: var(--font-heading-weight, var(--font-body-weight, inherit));
 }
-.fts-motion-figma-prototype-to-shopify * {
-  box-sizing: border-box;
+.fts-motion-figma-prototype-to-shopify .fts-stage {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  aspect-ratio: var(--stage-width) / var(--stage-height);
+  overflow: hidden;
+  isolation: isolate;
+}
+.fts-motion-figma-prototype-to-shopify .fts-variant {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.fts-motion-figma-prototype-to-shopify .fts-variant.is-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 .fts-motion-figma-prototype-to-shopify .n-example-root {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
   gap: 32px;
   align-items: center;
+  width: 100%;
+  height: 100%;
 }
 .fts-motion-figma-prototype-to-shopify img {
   display: block;
@@ -85,8 +141,16 @@ Real plugin exports are generated from your selected Figma frame.
 .fts-motion-figma-prototype-to-shopify .n-product-price {
   font-size: calc(20px * var(--font-body-scale, 1));
 }
+.fts-motion-figma-prototype-to-shopify .n-product-add-to-cart {
+  display: inline-block;
+  width: 168px;
+}
+.fts-motion-figma-prototype-to-shopify .n-product-add-to-cart-hover {
+  width: 181px;
+}
 .fts-motion-figma-prototype-to-shopify button {
   min-height: 48px;
+  width: 100%;
   padding: 0 22px;
   border: 0;
   border-radius: 6px;
@@ -96,11 +160,14 @@ Real plugin exports are generated from your selected Figma frame.
   will-change: transform;
 }
 @media (max-width: 749px) {
+  .fts-motion-figma-prototype-to-shopify {
+    padding: 32px 18px;
+  }
   .fts-motion-figma-prototype-to-shopify .n-example-root {
     grid-template-columns: 1fr;
   }
   .fts-motion-figma-prototype-to-shopify .n-product-title {
-    font-size: 34px;
+    font-size: calc(34px * var(--font-body-scale, 1));
   }
 }
 {% endstylesheet %}
@@ -108,21 +175,94 @@ Real plugin exports are generated from your selected Figma frame.
 <script>
 (function () {
   'use strict';
+  var STATE_KEY = '__ftsExampleMotion';
   function init(root) {
-    if (!root || root.__ftsExampleMotion) return;
-    var config = JSON.parse(root.querySelector('[data-fts-motion-config]').textContent);
+    if (!root || root[STATE_KEY]) return;
+    var configEl = root.querySelector('[data-fts-motion-config]');
+    var config = JSON.parse(configEl.textContent);
+    var activeCleanup = [];
+    function find(id) { return root.querySelector('[data-fts-node="' + id + '"]'); }
+    function findState(id) { return root.querySelector('[data-figma-node-id="' + id + '"].fts-variant'); }
+    function setState(state, active) {
+      if (!state) return;
+      state.classList.toggle('is-active', active);
+      state.setAttribute('aria-hidden', active ? 'false' : 'true');
+    }
+    function restore() {
+      activeCleanup.forEach(function (item) {
+        item.el.style.transform = item.transform;
+        item.el.style.opacity = item.opacity;
+        item.el.style.transition = item.transition;
+      });
+      activeCleanup = [];
+    }
+    function remember(el) {
+      activeCleanup.push({ el: el, transform: el.style.transform || '', opacity: el.style.opacity || '', transition: el.style.transition || '' });
+    }
+    function prepareDestinationDiffs(diffs, reverse) {
+      return (diffs || []).map(function (diff) {
+        var destination = find(reverse ? diff.sourceNodeId : diff.destinationNodeId);
+        if (!destination) return null;
+        remember(destination);
+        destination.style.transition = 'none';
+        destination.style.transform = 'scale(' + (reverse ? diff.scaleX : diff.fromScaleX) + ', ' + (reverse ? diff.scaleY : diff.fromScaleY) + ')';
+        return { el: destination, diff: diff };
+      }).filter(Boolean);
+    }
+    function muteSourceDiffs(diffs, reverse) {
+      (diffs || []).forEach(function (diff) {
+        var source = find(reverse ? diff.destinationNodeId : diff.sourceNodeId);
+        if (!source) return;
+        remember(source);
+        source.style.transition = 'none';
+        source.style.opacity = '0';
+      });
+    }
+    function playPreparedDiffs(items) {
+      items.forEach(function (item) {
+        item.el.style.transition = 'transform ' + item.diff.duration + 'ms ' + item.diff.ease + ', opacity ' + item.diff.duration + 'ms ' + item.diff.ease;
+        item.el.style.transform = '';
+      });
+    }
+    function changeVariant(sourceId, destinationId, transition, diffs, reverse) {
+      var source = findState(sourceId);
+      var destination = findState(destinationId);
+      if (!destination) return;
+      restore();
+      var prepared = prepareDestinationDiffs(diffs, reverse);
+      muteSourceDiffs(diffs, reverse);
+      destination.style.opacity = '1';
+      destination.style.visibility = 'visible';
+      setState(destination, true);
+      destination.getBoundingClientRect();
+      playPreparedDiffs(prepared);
+      if (source && source !== destination) {
+        source.style.opacity = '0';
+        source.style.pointerEvents = 'none';
+      }
+      window.setTimeout(function () {
+        restore();
+        if (source && source !== destination) {
+          setState(source, false);
+          source.style.opacity = '';
+          source.style.pointerEvents = '';
+        }
+        destination.style.opacity = '';
+        destination.style.visibility = '';
+      }, transition.durationMs);
+    }
     config.interactions.forEach(function (interaction) {
-      var trigger = root.querySelector('[data-fts-node="' + interaction.triggerNodeId + '"]');
+      var trigger = find(interaction.triggerNodeId);
       if (!trigger) return;
+      var action = interaction.actions[0];
       trigger.addEventListener('mouseenter', function () {
-        trigger.style.transition = 'transform 220ms ease-out';
-        trigger.style.transform = 'scale(1.04)';
+        changeVariant(action.sourceNodeId, action.destinationNodeId, action.transition, action.diffs, false);
       });
       trigger.addEventListener('mouseleave', function () {
-        trigger.style.transform = '';
+        changeVariant(action.destinationNodeId, action.sourceNodeId, action.transition, action.diffs, true);
       });
     });
-    root.__ftsExampleMotion = true;
+    root[STATE_KEY] = true;
   }
   function initAll(scope) {
     (scope || document).querySelectorAll('[data-motion-figma-prototype-to-shopify]').forEach(init);

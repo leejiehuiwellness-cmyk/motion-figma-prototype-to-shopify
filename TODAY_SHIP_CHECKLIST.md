@@ -18,6 +18,7 @@ Use this checklist to get Motion: Figma Prototype to Shopify running locally tod
 - Example Shopify section: `examples/example-shopify-section.liquid`
 - Packaged project ZIP: `dist/motion-figma-prototype-to-shopify-plugin.zip`
 - Export report includes raw Figma prototype reactions for animation handoff fidelity
+- Runtime Smart Animate playback uses destination-layer interpolation for smoother Shopify prototype motion
 - GitHub repo created: https://github.com/leejiehuiwellness-cmyk/motion-figma-prototype-to-shopify
 
 ## B. Run Locally in Figma Desktop
