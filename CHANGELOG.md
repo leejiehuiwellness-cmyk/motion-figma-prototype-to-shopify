@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4
+
+- Fixes loop flicker in generated Shopify runtime by registering `AFTER_TIMEOUT` prototype routes without requiring a rendered trigger node, preloading hidden variant image/SVG assets before timed playback, and making Infinite Loop fallback follow the compiled Figma route action/diffs instead of stepping through variants by layer order.
+- Keeps Smart Animate source/destination blending aligned to the Figma transition duration so loops do not look like a short refresh between states.
+
 ## 0.1.3
 
 - Preserves selected Figma layer transform and opacity more accurately by reading Figma transform matrices, using unrotated node bounds for positioned layers, and composing Smart Animate transform deltas with each layer's existing CSS/base transform.

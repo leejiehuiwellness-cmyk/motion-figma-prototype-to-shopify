@@ -94,6 +94,7 @@ After saving, Shopify should render:
 - Font family, font style, and font weight inherited from the Shopify theme.
 - Supported Figma prototype animation such as click, hover, delay, overlay, and Smart Animate-style diffs.
 - Smoother component/state motion: matched destination layers animate from the source layer position, size, rotation, opacity, color, and radius instead of showing every Figma state as a separate frame. Motion composes motion deltas with each layer's Figma base transform/opacity, so rotated or semi-transparent layers stay aligned with the selected Figma properties. If your Shopify theme already loads GSAP, the generated runtime uses `gsap.timeline()`; otherwise it uses a no-dependency fallback.
+- Route-aware loops: `AFTER_TIMEOUT` prototype routes and Infinite Loop fallback follow the compiled Figma route/diffs, and hidden image/SVG assets are preloaded before timed playback to avoid refresh-like flashes.
 - Motion tab, manifest, and report show prototype routes and loops before you paste the section.
 - Figma layer order is preserved in markup, while CSS `z-index` keeps the visual stack correct.
 - PNG/image shadows come from the Figma layer wrapper, not from the inner PNG file.

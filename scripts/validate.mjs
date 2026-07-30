@@ -274,11 +274,17 @@ assert(exportedJs.content.includes("setupScrollAnimation"), "Runtime should init
 assert(exportedJs.content.includes("setupScrollProgressAnimation"), "Runtime should support Scroll Scrub and Pin Sequence");
 assert(exportedJs.content.includes("ScrollTrigger.create"), "Runtime should use GSAP ScrollTrigger when available");
 assert(exportedJs.content.includes("afterTimeoutInteractions.push"), "Runtime should collect state-scoped AFTER_TIMEOUT interactions");
+assert(exportedJs.content.indexOf("if (trigger === 'AFTER_TIMEOUT')") < exportedJs.content.indexOf("var el = find(interaction.triggerNodeId)"), "AFTER_TIMEOUT prototype routes should register without requiring a rendered trigger node");
 assert(exportedJs.content.includes("prepareDestinationDiffs"), "Runtime should prepare destination layers for smooth Smart Animate playback");
 assert(exportedJs.content.includes("playPreparedDiffs"), "Runtime should play destination-layer Smart Animate diffs");
 assert(exportedJs.content.includes("playPreparedDiffsWithGsap"), "Runtime should use GSAP timeline for prepared Smart Animate layers when available");
 assert(exportedJs.content.includes("gsap.timeline"), "Runtime should include GSAP timeline enhancement");
 assert(exportedJs.content.includes("muteSourceDiffs"), "Runtime should hide matched source layers to avoid frame-by-frame ghosting");
+assert(exportedJs.content.includes("preloadMotionAssets"), "Runtime should preload hidden variant assets before timed prototype playback");
+assert(exportedJs.content.includes("whenAssetsReady(function () { runInteraction(interaction, false); })"), "Timed prototype routes should wait for assets before playback to avoid loop flashes");
+assert(exportedJs.content.includes("var sourceFadeDuration = duration"), "Smart Animate source fade should follow the Figma transition duration instead of a short refresh-like fade");
+assert(exportedJs.content.includes("nextRouteActionForState"), "Infinite Loop fallback should follow the Figma prototype route graph");
+assert(exportedJs.content.includes("runAction(route.action, false)"), "Infinite Loop fallback should reuse the compiled Figma route action and Smart Animate diffs");
 assert(exportedJs.content.includes("window.gsap"), "Runtime should support optional GSAP enhancement when the theme already loads GSAP");
 assert(exportedSharedJs.content.includes("function changeVariant"), "Shared runtime JS asset should contain the full generated runtime");
 assert(exportedSharedCss.content.includes("[data-motion-figma-prototype-to-shopify] .fts-node__asset"), "Shared runtime CSS asset should contain base asset rules");
@@ -879,6 +885,9 @@ function assertComponentSetExport(exportMessage, selectedType) {
   assert(js.content.includes("ScrollTrigger.create"), "Runtime missing optional ScrollTrigger support");
   assert(js.content.includes("prepareDestinationDiffs"), "Runtime missing destination-layer Smart Animate preparation");
   assert(js.content.includes("muteSourceDiffs"), "Runtime missing matched source-layer muting");
+  assert(js.content.includes("nextRouteActionForState"), "Runtime missing route-aware infinite loop fallback");
+  assert(js.content.includes("preloadMotionAssets"), "Runtime missing image/SVG preload guard for loop playback");
+  assert(!js.content.includes("Math.min(duration, 180)"), "Runtime should not use a short source fade that looks like a refresh during loops");
   assert(js.content.includes("window.gsap"), "Runtime missing optional GSAP enhancement");
   assert(js.content.includes("shopify:section:load"), "Runtime missing Shopify load lifecycle");
   assert(js.content.includes("shopify:section:unload"), "Runtime missing Shopify unload lifecycle");

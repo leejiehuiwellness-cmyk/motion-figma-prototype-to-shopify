@@ -1,6 +1,6 @@
 {
   "name": "motion-figma-prototype-to-shopify",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "description": "Figma plugin that exports selected prototype sections into Shopify Liquid sections with motion-aware CSS and JavaScript.",
   "scripts": {

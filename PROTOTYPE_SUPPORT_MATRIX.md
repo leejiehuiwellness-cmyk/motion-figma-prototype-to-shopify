@@ -95,7 +95,7 @@ The export report includes a `prototypeReactions` array with the raw interaction
 
 ## Prototype Route Detection
 
-Motion builds a route graph from selected frame/component/component-set/variant prototype links and shows it in the Motion tab. Circular routes are supported and reported, for example `Variant 3 -> Variant 4 -> Variant 3`, so loops created by component variants remain visible before copying Shopify code.
+Motion builds a route graph from selected frame/component/component-set/variant prototype links and shows it in the Motion tab. Circular routes are supported and reported, for example `Variant 3 -> Variant 4 -> Variant 3`, so loops created by component variants remain visible before copying Shopify code. Runtime loop playback follows the compiled route action/diffs when available; `AFTER_TIMEOUT` routes do not require the trigger node to be currently visible, and hidden variant assets are preloaded before timed playback.
 
 ## Asset Naming
 
