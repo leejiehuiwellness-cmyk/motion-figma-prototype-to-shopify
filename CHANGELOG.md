@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- Fixes refresh-like flashing in after-delay Smart Animate loops by using source-layer playback first and delaying the state swap until the end of the transition.
+- Adds static matched-layer hold for unchanged layers, so repeated variant routes do not fade the whole source frame when looping back.
+
 ## 0.1.0
 
 - Initial local Figma plugin.
