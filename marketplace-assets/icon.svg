@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Motion: Figma Prototype to Shopify icon</title>
+  <desc id="desc">A stylized motion path connecting Figma-style shapes to a Shopify shopping bag.</desc>
+  <rect width="512" height="512" rx="96" fill="#0f172a"/>
+  <circle cx="150" cy="138" r="54" fill="#ff7262"/>
+  <circle cx="150" cy="256" r="54" fill="#a259ff"/>
+  <circle cx="150" cy="374" r="54" fill="#1abcfe"/>
+  <rect x="234" y="130" width="156" height="210" rx="30" fill="#95bf47"/>
+  <path d="M264 182c0-39 22-68 53-68s53 29 53 68" fill="none" stroke="#ffffff" stroke-width="20" stroke-linecap="round"/>
+  <path d="M200 256c32 0 46-32 78-32h88" fill="none" stroke="#ffffff" stroke-width="18" stroke-linecap="round"/>
+  <path d="M342 196l42 28-42 28" fill="none" stroke="#ffffff" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="294" cy="262" r="10" fill="#ffffff"/>
+  <circle cx="336" cy="262" r="10" fill="#ffffff"/>
+</svg>

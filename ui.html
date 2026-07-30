@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Motion: Figma Prototype to Shopify</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: var(--figma-color-bg, #ffffff);
+      --panel: var(--figma-color-bg-secondary, #f7f7f7);
+      --text: var(--figma-color-text, #111111);
+      --muted: var(--figma-color-text-secondary, #666666);
+      --border: var(--figma-color-border, #d8d8d8);
+      --accent: var(--figma-color-bg-brand, #18a0fb);
+      --accent-text: var(--figma-color-text-onbrand, #ffffff);
+      --danger: #c4381f;
+      --ok: #168a42;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.2;
+    }
+
+    h2 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      line-height: 1.2;
+    }
+
+    h3 {
+      margin: 14px 0 6px;
+      font-size: 12px;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 30px;
+      padding: 0 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+    }
+
+    button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: var(--accent-text);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .48;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 30px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--text);
+      padding: 0 8px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 220px;
+      resize: vertical;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--text);
+      padding: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      line-height: 1.45;
+      white-space: pre;
+    }
+
+    main {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      height: calc(100vh - 56px);
+    }
+
+    .status {
+      color: var(--muted);
+      text-align: right;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 210px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+
+    .field {
+      display: grid;
+      gap: 4px;
+    }
+
+    .field label {
+      color: var(--muted);
+    }
+
+    .checks {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 30px;
+    }
+
+    .checks input {
+      width: auto;
+      min-height: 0;
+    }
+
+    .actions {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab {
+      border: 0;
+      border-right: 1px solid var(--border);
+      border-radius: 0;
+      background: var(--bg);
+      min-height: 34px;
+    }
+
+    .tab.active {
+      color: var(--accent);
+      box-shadow: inset 0 -2px 0 var(--accent);
+    }
+
+    .content {
+      overflow: auto;
+      padding: 14px 16px 20px;
+    }
+
+    .panel {
+      display: none;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .metric,
+    .notice,
+    .list-row {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 9px;
+      background: var(--bg);
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 18px;
+      line-height: 1.1;
+    }
+
+    .metric span,
+    .muted {
+      color: var(--muted);
+    }
+
+    .notice {
+      margin: 10px 0;
+      border-left: 3px solid var(--accent);
+    }
+
+    .notice.warn {
+      border-left-color: var(--danger);
+    }
+
+    .notice.ok {
+      border-left-color: var(--ok);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      padding: 7px;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      background: var(--panel);
+      font-weight: 600;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .file-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .copy-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 8px 0;
+    }
+
+    ol {
+      padding-left: 18px;
+      margin: 8px 0 14px;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 4px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Motion: Figma Prototype to Shopify</h1>
+      <div class="muted">Prototype flow to Shopify Liquid section</div>
+    </div>
+    <div id="status" class="status">Ready</div>
+  </header>
+
+  <main>
+    <section class="toolbar">
+      <div class="field">
+        <label for="sectionName">Section name</label>
+        <input id="sectionName" value="Motion: Figma Prototype to Shopify">
+      </div>
+      <div class="field">
+        <label for="filePrefix">File prefix</label>
+        <input id="filePrefix" value="motion-figma-prototype-to-shopify">
+      </div>
+      <div class="field">
+        <label for="assetScale">Asset scale</label>
+        <select id="assetScale">
+          <option value="1">1x</option>
+          <option value="2">2x</option>
+          <option value="3">3x</option>
+        </select>
+      </div>
+      <label class="checks">
+        <input id="includeVideoFallback" type="checkbox" checked>
+        Video fallback
+      </label>
+      <div class="actions">
+        <button id="rescan">Rescan</button>
+        <button id="export" class="primary">Generate export</button>
+        <button id="download" disabled>Download ZIP</button>
+      </div>
+    </section>
+
+    <nav class="tabs" aria-label="Plugin sections">
+      <button class="tab active" data-tab="overview">Overview</button>
+      <button class="tab" data-tab="copy">Copy</button>
+      <button class="tab" data-tab="bindings">Bindings</button>
+      <button class="tab" data-tab="motion">Motion</button>
+      <button class="tab" data-tab="guide">Guide</button>
+    </nav>
+
+    <section class="content">
+      <div id="overview" class="panel active">
+        <h2>Export status</h2>
+        <div id="summary" class="summary-grid"></div>
+        <div id="warnings"></div>
+        <h3>Files</h3>
+        <div id="files"></div>
+      </div>
+
+      <div id="copy" class="panel">
+        <h2>Copy to Shopify</h2>
+        <div class="notice ok">Use the Liquid copy for the fastest preview. It includes inline Shopify section CSS and JavaScript.</div>
+        <div class="copy-actions">
+          <button data-copy="sections">Copy Liquid</button>
+          <button data-copy="css">Copy CSS</button>
+          <button data-copy="js">Copy JS</button>
+        </div>
+        <textarea id="copyBox" readonly placeholder="Generate an export first."></textarea>
+      </div>
+
+      <div id="bindings" class="panel">
+        <h2>Liquid bindings</h2>
+        <div id="bindingsTable"></div>
+        <div class="notice">
+          Name Figma layers as <code>product.title</code>, <code>product.price</code>, <code>product.image</code>, <code>collection.grid</code>, <code>menu.main</code>, or <code>cart.count</code> to make them dynamic.
+        </div>
+      </div>
+
+      <div id="motion" class="panel">
+        <h2>Prototype motion</h2>
+        <div id="motionTable"></div>
+        <div class="notice">
+          This v1 reads Figma prototype triggers, actions, destinations, transitions, easing, duration, overlays, and Smart Animate-like matching layer diffs. Drag, variables, conditionals, video runtime actions, and scroll-linked behavior are reported as warnings.
+        </div>
+      </div>
+
+      <div id="guide" class="panel">
+        <h2>Onboarding guide</h2>
+        <ol>
+          <li>In Figma, open a finished Shopify page or section design.</li>
+          <li>Select one top-level frame, component, group, or prototype flow starting frame.</li>
+          <li>For Shopify dynamic content, rename layers with data names such as <code>product.title</code>, <code>product.price</code>, <code>product.image</code>, <code>collection.grid</code>, <code>menu.main</code>, and <code>cart.count</code>.</li>
+          <li>Add prototype interactions in Figma Prototype mode. Supported v1 interactions include click, hover, press, mouse enter/leave, mouse down/up, after delay, navigate, swap, change-to, open overlay, back, close, and URL.</li>
+          <li>Run this plugin, review warnings, then click <strong>Generate export</strong>.</li>
+          <li>Use <strong>Copy Liquid</strong> to paste the one-file section into Shopify, or download the ZIP and copy files into a Shopify theme project.</li>
+          <li>In Shopify Admin, go to Online Store > Themes > Edit code > Sections, add a new section with the generated file name, paste the Liquid, save, then add the section in the theme editor.</li>
+          <li>If the section references assets, upload the generated files from the ZIP's <code>assets</code> folder into the Shopify theme assets folder.</li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    var state = {
+      summary: null,
+      files: []
+    };
+
+    var statusEl = document.getElementById("status");
+    var summaryEl = document.getElementById("summary");
+    var warningsEl = document.getElementById("warnings");
+    var filesEl = document.getElementById("files");
+    var bindingsEl = document.getElementById("bindingsTable");
+    var motionEl = document.getElementById("motionTable");
+    var copyBox = document.getElementById("copyBox");
+    var downloadButton = document.getElementById("download");
+
+    document.getElementById("rescan").addEventListener("click", function () {
+      send("scan");
+    });
+
+    document.getElementById("export").addEventListener("click", function () {
+      send("export");
+    });
+
+    downloadButton.addEventListener("click", function () {
+      if (!state.files.length) return;
+      var blob = createZip(state.files);
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = getSettings().filePrefix.replace(/[^a-z0-9-]/gi, "-") + ".zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    });
+
+    document.querySelectorAll("[data-copy]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        var kind = button.getAttribute("data-copy");
+        var file = findCopyFile(kind);
+        if (!file) return;
+        copyBox.value = file.content || "";
+        copyText(copyBox.value);
+      });
+    });
+
+    document.querySelectorAll(".tab").forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        document.querySelectorAll(".tab").forEach(function (item) { item.classList.remove("active"); });
+        document.querySelectorAll(".panel").forEach(function (item) { item.classList.remove("active"); });
+        tab.classList.add("active");
+        document.getElementById(tab.getAttribute("data-tab")).classList.add("active");
+      });
+    });
+
+    window.onmessage = function (event) {
+      var message = event.data.pluginMessage;
+      if (!message || !message.type) return;
+
+      if (message.type === "busy") {
+        setStatus(message.label || "Working...");
+        return;
+      }
+
+      if (message.type === "selection-changed") {
+        setStatus("Selection changed. Rescan when ready.");
+        return;
+      }
+
+      if (message.type === "scan-result" || message.type === "export-result") {
+        state.summary = message.summary;
+        state.files = message.files || [];
+        setStatus(message.type === "export-result" ? "Export ready" : "Scan ready");
+        render();
+        return;
+      }
+
+      if (message.type === "error") {
+        setStatus("Needs attention");
+        warningsEl.innerHTML = '<div class="notice warn">' + escapeHtml(message.message) + '</div>';
+      }
+    };
+
+    function send(type) {
+      parent.postMessage({
+        pluginMessage: {
+          type: type,
+          settings: getSettings()
+        }
+      }, "*");
+    }
+
+    function getSettings() {
+      return {
+        sectionName: document.getElementById("sectionName").value,
+        filePrefix: document.getElementById("filePrefix").value,
+        assetScale: Number(document.getElementById("assetScale").value || 1),
+        includeVideoFallback: document.getElementById("includeVideoFallback").checked
+      };
+    }
+
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    function render() {
+      renderSummary();
+      renderWarnings();
+      renderFiles();
+      renderBindings();
+      renderMotion();
+      renderCopyDefault();
+      downloadButton.disabled = !state.files.length;
+    }
+
+    function renderSummary() {
+      var summary = state.summary;
+      if (!summary) {
+        summaryEl.innerHTML = '<div class="notice">Select one frame, then rescan.</div>';
+        return;
+      }
+      var counts = summary.counts || {};
+      summaryEl.innerHTML = [
+        metric(counts.nodes || 0, "Figma nodes"),
+        metric(counts.bindings || 0, "Liquid bindings"),
+        metric(counts.interactions || 0, "Motion interactions"),
+        metric(counts.warnings || 0, "Warnings"),
+      ].join("");
+    }
+
+    function renderWarnings() {
+      var warnings = state.summary && state.summary.warnings ? state.summary.warnings : [];
+      if (!warnings.length) {
+        warningsEl.innerHTML = '<div class="notice ok">No blocking issues found.</div>';
+        return;
+      }
+      warningsEl.innerHTML = warnings.map(function (warning) {
+        return '<div class="notice warn">' + escapeHtml(warning.message) + '</div>';
+      }).join("");
+    }
+
+    function renderFiles() {
+      if (!state.files.length) {
+        filesEl.innerHTML = '<div class="notice">No files generated yet.</div>';
+        return;
+      }
+      filesEl.innerHTML = state.files.map(function (file) {
+        return '<div class="file-row list-row"><span>' + escapeHtml(file.path) + '<br><span class="muted">' + formatSize(file.content ? file.content.length : file.bytes ? file.bytes.length : file.size || 0) + '</span></span><button data-copy-path="' + escapeHtml(file.path) + '">Copy</button></div>';
+      }).join("");
+      filesEl.querySelectorAll("[data-copy-path]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          var file = state.files.find(function (item) { return item.path === button.getAttribute("data-copy-path"); });
+          if (file && file.content) {
+            copyBox.value = file.content;
+            copyText(file.content);
+          }
+        });
+      });
+    }
+
+    function renderBindings() {
+      var bindings = state.summary && state.summary.bindings ? state.summary.bindings : [];
+      if (!bindings.length) {
+        bindingsEl.innerHTML = '<div class="notice">No dynamic bindings detected. Rename layers with Shopify names to make them dynamic.</div>';
+        return;
+      }
+      bindingsEl.innerHTML = table(["Layer", "Binding", "Group"], bindings.map(function (binding) {
+        return [binding.nodeName, binding.key, binding.group];
+      }));
+    }
+
+    function renderMotion() {
+      var interactions = state.summary && state.summary.interactions ? state.summary.interactions : [];
+      if (!interactions.length) {
+        motionEl.innerHTML = '<div class="notice">No supported prototype interactions detected.</div>';
+        return;
+      }
+      motionEl.innerHTML = table(["Hotspot", "Trigger", "Actions"], interactions.map(function (item) {
+        return [item.triggerNode, item.trigger, item.actions.join(", ")];
+      }));
+    }
+
+    function renderCopyDefault() {
+      var file = findCopyFile("sections");
+      copyBox.value = file ? file.content : "";
+    }
+
+    function findCopyFile(kind) {
+      if (kind === "sections") return state.files.find(function (file) { return /^sections\/.*\.liquid$/.test(file.path); });
+      if (kind === "css") return state.files.find(function (file) { return /^assets\/.*\.css$/.test(file.path); });
+      if (kind === "js") return state.files.find(function (file) { return /^assets\/.*\.js$/.test(file.path); });
+      return null;
+    }
+
+    function copyText(text) {
+      if (!text) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () {
+          setStatus("Copied");
+        }).catch(function () {
+          fallbackCopy(text);
+        });
+      } else {
+        fallbackCopy(text);
+      }
+    }
+
+    function fallbackCopy(text) {
+      copyBox.value = text;
+      copyBox.focus();
+      copyBox.select();
+      document.execCommand("copy");
+      setStatus("Copied");
+    }
+
+    function metric(value, label) {
+      return '<div class="metric"><strong>' + escapeHtml(String(value)) + '</strong><span>' + escapeHtml(label) + '</span></div>';
+    }
+
+    function table(headers, rows) {
+      return '<table><thead><tr>' + headers.map(function (header) {
+        return '<th>' + escapeHtml(header) + '</th>';
+      }).join("") + '</tr></thead><tbody>' + rows.map(function (row) {
+        return '<tr>' + row.map(function (cell) {
+          return '<td>' + escapeHtml(String(cell || "")) + '</td>';
+        }).join("") + '</tr>';
+      }).join("") + '</tbody></table>';
+    }
+
+    function formatSize(size) {
+      if (size > 1024 * 1024) return (size / 1024 / 1024).toFixed(1) + " MB";
+      if (size > 1024) return (size / 1024).toFixed(1) + " KB";
+      return size + " B";
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function createZip(files) {
+      var encoder = new TextEncoder();
+      var localParts = [];
+      var centralParts = [];
+      var offset = 0;
+      files.forEach(function (file) {
+        var nameBytes = encoder.encode(file.path);
+        var data = file.bytes ? Uint8Array.from(file.bytes) : encoder.encode(file.content || "");
+        var crc = crc32(data);
+        var local = concat([
+          u32(0x04034b50),
+          u16(20),
+          u16(0),
+          u16(0),
+          u16(0),
+          u16(0),
+          u32(crc),
+          u32(data.length),
+          u32(data.length),
+          u16(nameBytes.length),
+          u16(0),
+          nameBytes,
+          data
+        ]);
+        localParts.push(local);
+        centralParts.push(concat([
+          u32(0x02014b50),
+          u16(20),
+          u16(20),
+          u16(0),
+          u16(0),
+          u16(0),
+          u16(0),
+          u32(crc),
+          u32(data.length),
+          u32(data.length),
+          u16(nameBytes.length),
+          u16(0),
+          u16(0),
+          u16(0),
+          u16(0),
+          u32(0),
+          u32(offset),
+          nameBytes
+        ]));
+        offset += local.length;
+      });
+      var central = concat(centralParts);
+      var end = concat([
+        u32(0x06054b50),
+        u16(0),
+        u16(0),
+        u16(files.length),
+        u16(files.length),
+        u32(central.length),
+        u32(offset),
+        u16(0)
+      ]);
+      return new Blob([concat(localParts), central, end], { type: "application/zip" });
+    }
+
+    function crc32(data) {
+      var table = crc32.table || (crc32.table = makeCrcTable());
+      var crc = -1;
+      for (var i = 0; i < data.length; i += 1) {
+        crc = (crc >>> 8) ^ table[(crc ^ data[i]) & 0xff];
+      }
+      return (crc ^ -1) >>> 0;
+    }
+
+    function makeCrcTable() {
+      var table = [];
+      for (var n = 0; n < 256; n += 1) {
+        var c = n;
+        for (var k = 0; k < 8; k += 1) {
+          c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+        }
+        table[n] = c >>> 0;
+      }
+      return table;
+    }
+
+    function u16(value) {
+      var out = new Uint8Array(2);
+      out[0] = value & 255;
+      out[1] = (value >>> 8) & 255;
+      return out;
+    }
+
+    function u32(value) {
+      var out = new Uint8Array(4);
+      out[0] = value & 255;
+      out[1] = (value >>> 8) & 255;
+      out[2] = (value >>> 16) & 255;
+      out[3] = (value >>> 24) & 255;
+      return out;
+    }
+
+    function concat(parts) {
+      var size = parts.reduce(function (sum, part) { return sum + part.length; }, 0);
+      var out = new Uint8Array(size);
+      var offset = 0;
+      parts.forEach(function (part) {
+        out.set(part, offset);
+        offset += part.length;
+      });
+      return out;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+{% comment %}
+Example output shape for Motion: Figma Prototype to Shopify.
+Paste this file into Shopify Admin > Online Store > Themes > Edit code > sections/motion-figma-prototype-to-shopify.liquid.
+Real plugin exports are generated from your selected Figma frame.
+{% endcomment %}
+{% liquid
+  assign fts_product = product
+  if section.settings.product != blank
+    assign fts_product = section.settings.product
+    if fts_product.title == blank
+      assign fts_product = all_products[section.settings.product]
+    endif
+  endif
+%}
+
+<section class="fts-motion-figma-prototype-to-shopify" data-motion-figma-prototype-to-shopify>
+  <div class="fts-node n-example-root" data-fts-node="example-root">
+    <div class="fts-node n-product-image" data-fts-node="product-image">
+      {% if fts_product.featured_image %}
+        {{ fts_product.featured_image | image_url: width: 1200 | image_tag: loading: 'lazy' }}
+      {% endif %}
+    </div>
+    <div class="fts-node n-product-copy" data-fts-node="product-copy">
+      <p class="fts-node n-product-vendor" data-fts-node="product-vendor">{{ fts_product.vendor | escape }}</p>
+      <h2 class="fts-node n-product-title" data-fts-node="product-title">{{ fts_product.title | escape }}</h2>
+      <p class="fts-node n-product-price" data-fts-node="product-price">{{ fts_product.price | money }}</p>
+      <product-form class="fts-node n-product-add-to-cart" data-fts-node="product-add-to-cart">
+        {% form 'product', fts_product %}
+          <input type="hidden" name="id" value="{{ fts_product.selected_or_first_available_variant.id }}">
+          <button type="submit" {% unless fts_product.available %}disabled{% endunless %}>
+            Add to cart
+          </button>
+        {% endform %}
+      </product-form>
+    </div>
+  </div>
+  <script type="application/json" data-fts-motion-config>{"version":1,"interactions":[{"triggerNodeId":"product-add-to-cart","trigger":"ON_HOVER","delay":0,"reversible":true,"actions":[{"kind":"animate-to-state","destinationName":"Hover","transition":{"type":"SMART_ANIMATE","durationMs":220,"cssEase":"ease-out"},"diffs":[{"nodeId":"product-add-to-cart","scaleX":1.04,"scaleY":1.04,"duration":220,"ease":"ease-out"}]}]}]}</script>
+</section>
+
+{% stylesheet %}
+.fts-motion-figma-prototype-to-shopify {
+  box-sizing: border-box;
+  color: #111111;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+.fts-motion-figma-prototype-to-shopify * {
+  box-sizing: border-box;
+}
+.fts-motion-figma-prototype-to-shopify .n-example-root {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+  gap: 32px;
+  align-items: center;
+}
+.fts-motion-figma-prototype-to-shopify img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.fts-motion-figma-prototype-to-shopify .n-product-title {
+  margin: 8px 0 12px;
+  font-size: 52px;
+  line-height: 1;
+}
+.fts-motion-figma-prototype-to-shopify .n-product-price {
+  font-size: 20px;
+  font-weight: 700;
+}
+.fts-motion-figma-prototype-to-shopify button {
+  min-height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 6px;
+  background: #111111;
+  color: #ffffff;
+  cursor: pointer;
+  will-change: transform;
+}
+@media (max-width: 749px) {
+  .fts-motion-figma-prototype-to-shopify .n-example-root {
+    grid-template-columns: 1fr;
+  }
+  .fts-motion-figma-prototype-to-shopify .n-product-title {
+    font-size: 34px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fts-motion-figma-prototype-to-shopify * {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
+}
+{% endstylesheet %}
+
+{% javascript %}
+(function () {
+  'use strict';
+  function init(root) {
+    if (!root || root.__ftsExampleMotion) return;
+    var config = JSON.parse(root.querySelector('[data-fts-motion-config]').textContent);
+    config.interactions.forEach(function (interaction) {
+      var trigger = root.querySelector('[data-fts-node="' + interaction.triggerNodeId + '"]');
+      if (!trigger) return;
+      trigger.addEventListener('mouseenter', function () {
+        trigger.style.transition = 'transform 220ms ease-out';
+        trigger.style.transform = 'scale(1.04)';
+      });
+      trigger.addEventListener('mouseleave', function () {
+        trigger.style.transform = '';
+      });
+    });
+    root.__ftsExampleMotion = true;
+  }
+  function initAll(scope) {
+    (scope || document).querySelectorAll('[data-motion-figma-prototype-to-shopify]').forEach(init);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { initAll(document); });
+  else initAll(document);
+  document.addEventListener('shopify:section:load', function (event) { initAll(event.target); });
+}());
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "Motion: Figma Prototype to Shopify",
+  "tag": "section",
+  "class": "motion-figma-prototype-to-shopify-wrapper",
+  "settings": [
+    {
+      "type": "product",
+      "id": "product",
+      "label": "Product fallback"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Motion: Figma Prototype to Shopify"
+    }
+  ]
+}
+{% endschema %}

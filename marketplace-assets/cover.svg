@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Motion: Figma Prototype to Shopify cover</title>
+  <desc id="desc">Marketplace cover showing Figma prototype frames turning into a Shopify Liquid section.</desc>
+  <rect width="1920" height="1080" fill="#f8fafc"/>
+  <rect x="88" y="88" width="1744" height="784" rx="48" fill="#0f172a"/>
+  <rect x="154" y="154" width="620" height="652" rx="28" fill="#ffffff"/>
+  <rect x="216" y="226" width="248" height="36" rx="18" fill="#111827"/>
+  <rect x="216" y="306" width="450" height="22" rx="11" fill="#cbd5e1"/>
+  <rect x="216" y="352" width="390" height="22" rx="11" fill="#cbd5e1"/>
+  <rect x="216" y="428" width="490" height="230" rx="24" fill="#e2e8f0"/>
+  <circle cx="276" cy="710" r="28" fill="#ff7262"/>
+  <circle cx="350" cy="710" r="28" fill="#a259ff"/>
+  <circle cx="424" cy="710" r="28" fill="#1abcfe"/>
+  <path d="M822 480h292" fill="none" stroke="#95bf47" stroke-width="22" stroke-linecap="round"/>
+  <path d="M1062 422l76 58-76 58" fill="none" stroke="#95bf47" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="1196" y="154" width="570" height="652" rx="28" fill="#ffffff"/>
+  <text x="1264" y="250" fill="#111827" font-size="58" font-family="Arial, sans-serif" font-weight="700">Shopify Liquid</text>
+  <text x="1264" y="330" fill="#475569" font-size="28" font-family="Arial, sans-serif">sections/motion-figma-prototype-to-shopify.liquid</text>
+  <rect x="1264" y="396" width="390" height="24" rx="12" fill="#cbd5e1"/>
+  <rect x="1264" y="454" width="430" height="24" rx="12" fill="#cbd5e1"/>
+  <rect x="1264" y="512" width="350" height="24" rx="12" fill="#cbd5e1"/>
+  <rect x="1264" y="604" width="270" height="70" rx="14" fill="#95bf47"/>
+  <text x="1310" y="650" fill="#ffffff" font-size="28" font-family="Arial, sans-serif" font-weight="700">Add section</text>
+  <text x="154" y="902" fill="#ffffff" font-size="40" font-family="Arial, sans-serif" font-weight="700">Motion: Figma Prototype to Shopify</text>
+  <text x="154" y="940" fill="#cbd5e1" font-size="24" font-family="Arial, sans-serif">Export prototype interactions into Shopify-ready Liquid, CSS, and JavaScript</text>
+</svg>
