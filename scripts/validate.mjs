@@ -21,7 +21,13 @@ const requiredFiles = [
   "marketplace-assets/icon.svg",
   "marketplace-assets/cover.svg",
   "marketplace-assets/icon.png",
-  "marketplace-assets/cover.png"
+  "marketplace-assets/cover.png",
+  "docs/.nojekyll",
+  "docs/index.html",
+  "docs/assets/site.css",
+  "docs/assets/site.js",
+  "docs/assets/icon.png",
+  "docs/assets/cover.png"
 ];
 
 for (const file of requiredFiles) {
@@ -104,6 +110,26 @@ assert(schemaMatch, "Example Liquid missing schema block");
 JSON.parse(schemaMatch[1]);
 assertPngDimensions("marketplace-assets/icon.png", 128, 128);
 assertPngDimensions("marketplace-assets/cover.png", 1920, 1080);
+
+const docsHome = read("docs/index.html");
+[
+  "Motion: Figma Prototype to Shopify",
+  "by Jiehui",
+  "完整使用流程",
+  "Import plugin from manifest",
+  "product.title",
+  "Shopify Admin",
+  "Prototype motion",
+  "Download source ZIP"
+].forEach((needle) => {
+  assert(docsHome.includes(needle), `docs/index.html missing ${needle}`);
+});
+assert(!docsHome.includes("/dist/"), "Docs page must not link to ignored dist assets");
+for (const ref of docsHome.matchAll(/(?:href|src)="(assets\/[^"]+)"/g)) {
+  assert(existsSync(`docs/${ref[1]}`), `Docs page references missing asset ${ref[1]}`);
+}
+assertPngDimensions("docs/assets/icon.png", 128, 128);
+assertPngDimensions("docs/assets/cover.png", 1920, 1080);
 
 const runtimeResult = await runPluginRuntimeSmokeTest(code, ui);
 assert(runtimeResult.showUICalled, "Plugin did not open UI");

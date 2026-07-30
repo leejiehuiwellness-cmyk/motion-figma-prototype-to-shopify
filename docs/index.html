@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="zh-Hans">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Motion: Figma Prototype to Shopify by Jiehui</title>
+    <meta
+      name="description"
+      content="Motion: Figma Prototype to Shopify 是一个 Figma plugin，把选中的 Figma prototype frame 转成可复制到 Shopify 的 Liquid section code。"
+    >
+    <meta property="og:title" content="Motion: Figma Prototype to Shopify">
+    <meta property="og:description" content="把 Figma prototype interaction 和 dynamic animation 转成 Shopify Liquid section。Credit by Jiehui.">
+    <meta property="og:image" content="assets/cover.png">
+    <meta name="theme-color" content="#f4efe7">
+    <link rel="icon" href="assets/icon.png">
+    <link rel="stylesheet" href="assets/site.css">
+  </head>
+  <body>
+    <header class="site-header" data-header>
+      <a class="brand" href="#top" aria-label="Motion home">
+        <img src="assets/icon.png" alt="" width="32" height="32">
+        <span>
+          <strong>Motion</strong>
+          <small>by Jiehui</small>
+        </span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" data-nav-toggle>
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <nav id="site-nav" class="site-nav" data-nav>
+        <a href="#how">How it works</a>
+        <a href="#figma">Figma setup</a>
+        <a href="#shopify">Shopify paste</a>
+        <a href="#motion">Prototype motion</a>
+        <a href="#download">Download</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <img class="hero-media" src="assets/cover.png" alt="Motion plugin cover showing Figma to Shopify workflow">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          <p class="eyebrow">Figma plugin · Shopify Liquid section exporter</p>
+          <h1 id="hero-title">Motion: Figma Prototype to Shopify</h1>
+          <p class="hero-copy">
+            把设计师做好的 Figma prototype frame，导出成 Shopify Online Store 2.0 可用的 Liquid section，
+            并尽量保留 click、hover、delay、overlay 与 Smart Animate 风格的 motion。
+          </p>
+          <div class="hero-actions" aria-label="Primary actions">
+            <a class="button primary" href="https://github.com/leejiehuiwellness-cmyk/motion-figma-prototype-to-shopify" target="_blank" rel="noreferrer">View GitHub</a>
+            <a class="button secondary" href="#guide">Read guide</a>
+          </div>
+          <p class="credit">Built and credited by Jiehui.</p>
+        </div>
+      </section>
+
+      <section class="quick-strip" aria-label="Quick workflow">
+        <div class="quick-item">
+          <span>01</span>
+          <strong>Import plugin</strong>
+          <p>在 Figma Desktop 从 `manifest.json` 导入本地插件。</p>
+        </div>
+        <div class="quick-item">
+          <span>02</span>
+          <strong>Select frame</strong>
+          <p>选择一个完整 frame、component、instance 或 prototype 起点。</p>
+        </div>
+        <div class="quick-item">
+          <span>03</span>
+          <strong>Generate export</strong>
+          <p>插件读取 layout、Shopify binding、prototype reactions。</p>
+        </div>
+        <div class="quick-item">
+          <span>04</span>
+          <strong>Paste Liquid</strong>
+          <p>复制 section code 到 Shopify theme 并上传 assets。</p>
+        </div>
+      </section>
+
+      <section id="guide" class="section intro-grid" aria-labelledby="guide-title">
+        <div>
+          <p class="eyebrow">User guide</p>
+          <h2 id="guide-title">怎样从 Figma prototype 变成 Shopify section</h2>
+          <p>
+            Motion 的目标不是只截图一个静态页面，而是把 Figma 里的结构、动态层命名和 prototype interaction
+            转换成一个 Shopify 可以安装、配置、预览和上线的 section file。
+          </p>
+        </div>
+        <div class="code-window" aria-label="Generated file list">
+          <div class="window-bar">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <pre><code>sections/motion-figma-prototype-to-shopify.liquid
+assets/motion-figma-prototype-to-shopify.css
+assets/motion-figma-prototype-to-shopify.js
+templates/page.motion-figma-prototype-to-shopify.json
+motion-figma-prototype-to-shopify-report.json</code></pre>
+        </div>
+      </section>
+
+      <section id="how" class="section band" aria-labelledby="how-title">
+        <div class="section-head">
+          <p class="eyebrow">Step by step</p>
+          <h2 id="how-title">完整使用流程</h2>
+        </div>
+        <ol class="steps">
+          <li>
+            <span class="step-number">1</span>
+            <div>
+              <h3>下载或 clone GitHub repo</h3>
+              <p>打开 GitHub 仓库，下载源码，或把 repo clone 到本地。插件入口文件已经准备好：`manifest.json`、`code.js`、`ui.html`。</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-number">2</span>
+            <div>
+              <h3>在 Figma Desktop 导入 plugin</h3>
+              <p>打开 Figma Desktop，进入任意 Design file，右键画布，选择 Plugins > Development > Import plugin from manifest，然后选择 repo 里的 `manifest.json`。</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-number">3</span>
+            <div>
+              <h3>选择要转换的 prototype 起点</h3>
+              <p>选中一个顶层 frame、section、component 或 instance。建议选择完整的 Shopify 页面模块，例如 product hero、collection grid、announcement bar、campaign block。</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-number">4</span>
+            <div>
+              <h3>命名 dynamic Shopify layers</h3>
+              <p>把需要连接 Shopify 数据的 Figma layer 改名为 `product.title`、`product.price`、`product.image`、`product.add_to_cart`、`collection.grid`、`menu.main`、`cart.count` 等。</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-number">5</span>
+            <div>
+              <h3>保留设计师做的 prototype motion</h3>
+              <p>在 Figma Prototype 面板里设置 click、hover、after delay、open overlay、change to、navigate、Smart Animate。Motion 会读取 Figma reaction，并把支持的部分编译到 CSS/JavaScript。</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-number">6</span>
+            <div>
+              <h3>生成 Shopify Liquid export</h3>
+              <p>运行 Motion，点击 Generate export。你可以直接 Copy Liquid，也可以 Download ZIP 获取 section、assets、template JSON 和 conversion report。</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-number">7</span>
+            <div>
+              <h3>粘贴到 Shopify theme</h3>
+              <p>进入 Shopify Admin > Online Store > Themes > Edit code，新建 section，命名为 `motion-figma-prototype-to-shopify`，删除 starter code，粘贴完整 Liquid 后保存。</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-number">8</span>
+            <div>
+              <h3>添加 section 并预览上线</h3>
+              <p>回到 Customize，添加 Motion section，选择 product fallback、collection fallback、main menu 等设置。若导出 ZIP 里有图片或 SVG，请上传到 Shopify theme assets。</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <section id="figma" class="section two-column" aria-labelledby="figma-title">
+        <div>
+          <p class="eyebrow">Figma setup</p>
+          <h2 id="figma-title">设计师需要怎样准备 Figma file</h2>
+          <p>
+            最好的输入是一个完整、命名清楚、prototype flow 已连好的 frame。Motion 会尽力复制视觉布局和 motion，
+            但 Figma 原型不是浏览器运行时，所以复杂逻辑会写进 report，让开发者知道要手动补哪一段。
+          </p>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Figma layer name</th>
+                <th>Shopify output</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>product.title</code></td>
+                <td>Product title</td>
+              </tr>
+              <tr>
+                <td><code>product.price</code></td>
+                <td>Money formatted price</td>
+              </tr>
+              <tr>
+                <td><code>product.image</code></td>
+                <td>Featured product image</td>
+              </tr>
+              <tr>
+                <td><code>product.add_to_cart</code></td>
+                <td>Product form button</td>
+              </tr>
+              <tr>
+                <td><code>collection.grid</code></td>
+                <td>Product loop from selected collection</td>
+              </tr>
+              <tr>
+                <td><code>menu.main</code></td>
+                <td>Navigation links from Shopify menu</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="shopify" class="section band split-band" aria-labelledby="shopify-title">
+        <div>
+          <p class="eyebrow">Shopify paste</p>
+          <h2 id="shopify-title">Shopify 里要粘贴什么</h2>
+          <p>
+            Motion 生成的 Liquid 已经包含 `{% stylesheet %}`、`{% javascript %}` 和 `{% schema %}`，
+            所以最快测试方式是直接复制完整 section code 到 Shopify。
+          </p>
+          <a class="text-link" href="https://github.com/leejiehuiwellness-cmyk/motion-figma-prototype-to-shopify/blob/main/SHOPIFY_COPY_PASTE_GUIDE.md" target="_blank" rel="noreferrer">Open full Shopify guide</a>
+        </div>
+        <div class="copy-panel">
+          <div class="panel-top">
+            <strong>Section name</strong>
+            <button class="icon-button" type="button" data-copy="motion-figma-prototype-to-shopify" aria-label="Copy section name">
+              Copy
+            </button>
+          </div>
+          <pre><code>motion-figma-prototype-to-shopify</code></pre>
+          <div class="panel-top">
+            <strong>Liquid skeleton</strong>
+            <button class="icon-button" type="button" data-copy="{{ 'motion-figma-prototype-to-shopify.css' | asset_url | stylesheet_tag }}" aria-label="Copy Liquid example">
+              Copy
+            </button>
+          </div>
+          <pre><code>&lt;section data-motion-figma-prototype-to-shopify&gt;
+  {{ product.title | escape }}
+&lt;/section&gt;
+
+{% schema %}
+{ "name": "Motion: Figma Prototype to Shopify" }
+{% endschema %}</code></pre>
+        </div>
+      </section>
+
+      <section id="motion" class="section" aria-labelledby="motion-title">
+        <div class="section-head">
+          <p class="eyebrow">Prototype motion</p>
+          <h2 id="motion-title">Dynamic animation 支持范围</h2>
+          <p>
+            Motion 会读取 Figma prototype reactions，并把可安全运行在 Shopify storefront 的 motion 编译成浏览器事件。
+            不支持或需要人工判断的功能会保存在 export report。
+          </p>
+        </div>
+        <div class="feature-grid">
+          <article>
+            <h3>Triggers</h3>
+            <p>Click/tap、hover、press、mouse enter、mouse leave、mouse down、mouse up、after delay。</p>
+          </article>
+          <article>
+            <h3>Actions</h3>
+            <p>Navigate、swap、change to、open overlay、back、close、open URL。</p>
+          </article>
+          <article>
+            <h3>Transitions</h3>
+            <p>Dissolve、directional movement、push/slide-style movement、Smart Animate-like layer diffs。</p>
+          </article>
+          <article>
+            <h3>Smart Animate diffs</h3>
+            <p>Position、scale、rotation、opacity、solid fill color。</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="download" class="section download" aria-labelledby="download-title">
+        <div>
+          <p class="eyebrow">Ready to try</p>
+          <h2 id="download-title">下载插件源码，今天就能在 Figma 里测试</h2>
+          <p>
+            当前版本可以作为本地 Figma development plugin 使用。Figma Community marketplace submission 文件也已经在 repo 里准备好。
+          </p>
+        </div>
+        <div class="download-actions">
+          <a class="button primary" href="https://github.com/leejiehuiwellness-cmyk/motion-figma-prototype-to-shopify" target="_blank" rel="noreferrer">Open repository</a>
+          <a class="button secondary" href="https://github.com/leejiehuiwellness-cmyk/motion-figma-prototype-to-shopify/archive/refs/heads/main.zip" target="_blank" rel="noreferrer">Download source ZIP</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p><strong>Motion: Figma Prototype to Shopify</strong> by Jiehui.</p>
+      <p>Independent tool. Not affiliated with Figma or Shopify.</p>
+      <p>
+        <a href="https://github.com/leejiehuiwellness-cmyk/motion-figma-prototype-to-shopify" target="_blank" rel="noreferrer">GitHub</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://github.com/leejiehuiwellness-cmyk/motion-figma-prototype-to-shopify/blob/main/PRIVACY.md" target="_blank" rel="noreferrer">Privacy</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://github.com/leejiehuiwellness-cmyk/motion-figma-prototype-to-shopify/blob/main/SUPPORT.md" target="_blank" rel="noreferrer">Support</a>
+      </p>
+    </footer>
+
+    <div class="toast" data-toast role="status" aria-live="polite">Copied</div>
+    <script src="assets/site.js"></script>
+  </body>
+</html>

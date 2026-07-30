@@ -2,6 +2,10 @@
 
 Motion: Figma Prototype to Shopify is a Figma Design plugin that exports one selected Figma frame, section, component, instance, or prototype starting frame into a Shopify Online Store 2.0 Liquid section.
 
+User guide website: https://leejiehuiwellness-cmyk.github.io/motion-figma-prototype-to-shopify/
+
+Credit: built by Jiehui.
+
 The first version focuses on a practical same-day workflow:
 
 - Select one finished Figma frame or flow starting point.
