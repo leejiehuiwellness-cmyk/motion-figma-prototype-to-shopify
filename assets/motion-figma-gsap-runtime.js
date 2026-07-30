@@ -5,7 +5,7 @@
   "use strict";
 
   var api = window.MotionFigmaGsapRuntime || {};
-  api.version = api.version || "0.1.1";
+  api.version = api.version || "0.1.2";
 
   api.canUseGsap = function () {
     return !!(window.gsap && typeof window.gsap.to === "function" && typeof window.gsap.timeline === "function");

@@ -26,7 +26,6 @@ Use this checklist to get Motion: Figma Prototype to Shopify running locally tod
 - SVG force names include `home_solution.svg`; PNG/image shadows stay on the Figma layer wrapper while inner file assets remain shadow-free
 - Shared runtime assets are packaged at `assets/motion-figma-gsap-runtime.css` and `assets/motion-figma-gsap-runtime.js`; Copy Code mode inlines the same code
 - Generated CSS groups repeated declarations and preserves layer stack, rotation, and text style details
-- Smart Animate after-delay loops hold unchanged matched layers and avoid whole-frame source fades, preventing refresh-like flashes
 - GitHub repo created: https://github.com/leejiehuiwellness-cmyk/motion-figma-prototype-to-shopify
 
 ## B. Run Locally in Figma Desktop

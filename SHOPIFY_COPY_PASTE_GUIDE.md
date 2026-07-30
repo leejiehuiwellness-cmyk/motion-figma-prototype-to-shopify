@@ -94,7 +94,6 @@ After saving, Shopify should render:
 - Font family, font style, and font weight inherited from the Shopify theme.
 - Supported Figma prototype animation such as click, hover, delay, overlay, and Smart Animate-style diffs.
 - Smoother component/state motion: matched destination layers animate from the source layer position, size, rotation, opacity, color, and radius instead of showing every Figma state as a separate frame. If your Shopify theme already loads GSAP, the generated runtime uses `gsap.timeline()`; otherwise it uses a no-dependency fallback.
-- Seamless loops: unchanged matched layers are held in place during after-delay Smart Animate loops, so the section does not flash like it refreshed when returning to an earlier variant.
 - Motion tab, manifest, and report show prototype routes and loops before you paste the section.
 - Figma layer order is preserved in markup, while CSS `z-index` keeps the visual stack correct.
 - PNG/image shadows come from the Figma layer wrapper, not from the inner PNG file.
@@ -113,7 +112,6 @@ After saving, Shopify should render:
 | Menu is blank | Choose Main menu in section settings. |
 | Animation does not move | Check `motion-figma-prototype-to-shopify-report.json` for unsupported prototype features. |
 | Animation looks like a frame slideshow | Regenerate with the latest plugin and keep matching source/destination layer names consistent. The latest runtime uses destination-layer Smart Animate playback instead of whole-frame snapshots when safe layer matches are found. |
-| Animation flashes when it loops back | Regenerate with the latest plugin. Smart Animate no longer fades the whole source variant during prepared layer playback; unchanged matched layers are held until the state swap completes. |
 | Variant sequence unexpectedly loops | Open the Motion tab or export report and check Prototype routes. Loops are listed explicitly, such as `Variant 3 -> Variant 4 -> Variant 3`. |
 | SVG exported as PNG | Rename the layer to a clean SVG filename such as `home_solution.svg`, then click Save and Run. |
 | Image shadow looks wrong | Regenerate with the latest plugin. The inner image asset has `box-shadow: none`; the Figma layer effect is emitted on the wrapper. |

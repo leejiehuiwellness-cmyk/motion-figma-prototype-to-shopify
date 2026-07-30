@@ -279,8 +279,6 @@ assert(exportedJs.content.includes("playPreparedDiffs"), "Runtime should play de
 assert(exportedJs.content.includes("playPreparedDiffsWithGsap"), "Runtime should use GSAP timeline for prepared Smart Animate layers when available");
 assert(exportedJs.content.includes("gsap.timeline"), "Runtime should include GSAP timeline enhancement");
 assert(exportedJs.content.includes("muteSourceDiffs"), "Runtime should hide matched source layers to avoid frame-by-frame ghosting");
-assert(exportedJs.content.includes("diff.static"), "Runtime should support static matched layers for seamless Smart Animate loops");
-assert(!exportedJs.content.includes("sourceFadeDuration"), "Runtime should not fade the whole source variant during prepared Smart Animate playback");
 assert(exportedJs.content.includes("window.gsap"), "Runtime should support optional GSAP enhancement when the theme already loads GSAP");
 assert(exportedSharedJs.content.includes("function changeVariant"), "Shared runtime JS asset should contain the full generated runtime");
 assert(exportedSharedCss.content.includes("[data-motion-figma-prototype-to-shopify] .fts-node__asset"), "Shared runtime CSS asset should contain base asset rules");
@@ -796,7 +794,6 @@ function assertComponentSetExport(exportMessage, selectedType) {
   assert(manifest.interactions.some((item) => item.delayMs === 1000), "AFTER_TIMEOUT delay should be stored in milliseconds");
   assert(manifest.interactions.some((item) => item.actions.some((action) => action.transition?.durationMs === 2000)), "Figma transition duration should be stored in milliseconds");
   assert(manifest.interactions.some((item) => item.actions.some((action) => action.destinationNodeId === "10:5")), "Variant chain should include Variant4 destination");
-  assert(manifest.interactions.some((item) => item.actions.some((action) => (action.diffs || []).some((diff) => diff.static === true))), "Smart Animate should include static hold diffs to prevent refresh flicker on looped states");
   assert(manifest.routes?.edges?.length >= 4, "Manifest should expose the compiled prototype route graph");
   assert(manifest.routes?.hasLoop === true, "Manifest should flag circular variant routes");
   assert(manifest.routes?.loops?.some((loop) => loop.names.join(" -> ").includes("Property 1=Variant3 -> Property 1=Variant4 -> Property 1=Variant3")), "Manifest should describe the Variant3/Variant4 loop");

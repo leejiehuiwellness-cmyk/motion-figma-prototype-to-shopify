@@ -1,9 +1,8 @@
 # Changelog
 
-## 0.1.1
+## 0.1.2
 
-- Fixes refresh-like flashing in after-delay Smart Animate loops by using source-layer playback first and delaying the state swap until the end of the transition.
-- Adds static matched-layer hold for unchanged layers, so repeated variant routes do not fade the whole source frame when looping back.
+- Restores the previous Smart Animate runtime used before the source-layer/static-hold playback experiments, while keeping layer stacking, rotation/text, shared runtime assets, and grouped CSS updates.
 
 ## 0.1.0
 
@@ -23,6 +22,5 @@
 - Preserves static layer rotation and Figma text weight/style/alignment/letter-spacing/line-height while still inheriting Shopify theme font family.
 - Packages shared theme assets at `assets/motion-figma-gsap-runtime.css` and `assets/motion-figma-gsap-runtime.js`.
 - Groups repeated generated CSS declarations across similar layers to reduce Copy Code noise.
-- Adds static matched-layer hold for Smart Animate loops, preventing after-delay variant routes from flashing like a whole-frame refresh when they loop back.
 - Preserves raw prototype reactions in the conversion report.
 - Adds onboarding, copy/paste Shopify guide, privacy note, marketplace listing copy, icon, cover, and validation smoke test.

@@ -82,7 +82,6 @@ Designers often build Shopify sections as components or variants. Motion support
 - Select a variant component to export its parent Component Set. Motion exports every direct component variant and uses one responsive stage with overlaid states instead of placing variants side by side.
 - Prototype `CHANGE_TO` / Smart Animate-style state changes are compiled as real source-to-destination variant switches by exact Figma node ID when matching layer names and hierarchy are consistent.
 - Smart Animate playback prepares matching destination layers from the source layer geometry, then moves/scales/rotates/fades them into their final Shopify state. When the Shopify theme already loads GSAP, Motion uses `gsap.timeline()` for that layer playback; otherwise it falls back to no-dependency CSS/JavaScript.
-- Unchanged matched layers are held as static layers during variant loops, so repeated after-delay Smart Animate routes do not flash like a whole-frame refresh when they loop back.
 - Motion detects prototype routes between variants/components/frames and reports loops, such as `Variant 3 -> Variant 4 -> Variant 3`, in the Motion tab, manifest, and export report.
 - The export report records both the selected layer and the actual export root so builders can verify the component boundary before pasting into Shopify.
 - Generated exports include shared theme assets at `assets/motion-figma-gsap-runtime.css` and `assets/motion-figma-gsap-runtime.js`; Copy Code mode inlines that runtime code, while ZIP/external mode exposes the files for Shopify theme assets.

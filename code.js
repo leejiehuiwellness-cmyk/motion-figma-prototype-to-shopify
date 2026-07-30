@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var PLUGIN_VERSION = "0.1.1";
+  var PLUGIN_VERSION = "0.1.2";
   var SHARED_RUNTIME_JS_ASSET = "motion-figma-gsap-runtime.js";
   var SHARED_RUNTIME_CSS_ASSET = "motion-figma-gsap-runtime.css";
   var MAX_ASSETS = 60;
@@ -1013,25 +1013,13 @@
       });
     });
 
-    var pairs = [];
-    var seenPairs = {};
+    var diffs = [];
     Object.keys(sourceMap).forEach(function (key) {
+      if (diffs.length >= 120) return;
       var source = sourceMap[key];
       var dest = destinationMap[key];
       if (!dest) return;
-      var pairKey = source.id + "->" + dest.id;
-      if (seenPairs[pairKey]) return;
-      seenPairs[pairKey] = true;
-      pairs.push({ source: source, dest: dest });
-    });
 
-    var diffs = [];
-    var changedSourcePaths = {};
-    var changedDestPaths = {};
-    pairs.forEach(function (pair) {
-      if (diffs.length >= 120) return;
-      var source = pair.source;
-      var dest = pair.dest;
       var diff = {
         nodeId: source.id,
         sourceNodeId: source.id,
@@ -1096,47 +1084,13 @@
         diff.duration = transition.durationMs;
         diff.ease = transition.cssEase;
         diffs.push(diff);
-        if (source.pathKey) changedSourcePaths[source.pathKey] = true;
-        if (dest.pathKey) changedDestPaths[dest.pathKey] = true;
       }
     });
 
-    pairs.forEach(function (pair) {
-      if (diffs.length >= 180) return;
-      var source = pair.source;
-      var dest = pair.dest;
-      if (!shouldHoldStaticLayer(source, dest, changedSourcePaths, changedDestPaths)) return;
-      diffs.push({
-        nodeId: source.id,
-        sourceNodeId: source.id,
-        destinationNodeId: dest.id,
-        static: true,
-        duration: transition.durationMs,
-        ease: transition.cssEase
-      });
-    });
-
-    if (diffs.length >= 180) {
-      ctx.warnings.push(warning("motion-diff-limit", "Only the first 180 Smart Animate layer differences were compiled for performance.", sourceRoot.figmaId));
+    if (diffs.length >= 120) {
+      ctx.warnings.push(warning("motion-diff-limit", "Only the first 120 Smart Animate layer differences were compiled for performance.", sourceRoot.figmaId));
     }
     return diffs;
-  }
-
-  function shouldHoldStaticLayer(source, dest, changedSourcePaths, changedDestPaths) {
-    if (!source || !dest || source.depth === 0 || dest.depth === 0) return false;
-    if (source.type !== dest.type) return false;
-    if ((source.children && source.children.length) || (dest.children && dest.children.length)) return false;
-    if (hasChangedAncestorPath(source.pathKey, changedSourcePaths) || hasChangedAncestorPath(dest.pathKey, changedDestPaths)) return false;
-    if (source.text && dest.text && source.text.characters !== dest.text.characters) return false;
-    if (firstImageHash(source) !== firstImageHash(dest)) return false;
-    return Boolean(source.asset || dest.asset || source.text || dest.text || VECTOR_TYPES[source.type] || source.fills.length || dest.fills.length);
-  }
-
-  function hasChangedAncestorPath(pathKey, changedPaths) {
-    if (!pathKey) return false;
-    return Object.keys(changedPaths || {}).some(function (changedPath) {
-      return changedPath && (pathKey === changedPath || pathKey.indexOf(changedPath + "/") === 0);
-    });
   }
 
   function collectMatchKeys(node) {
@@ -2184,12 +2138,6 @@
       "      var el = find(targetId);",
       "      if (!el || !diff.destinationNodeId) return null;",
       "      remember(el);",
-      "      if (diff.static) {",
-      "        el.style.transition = 'none';",
-      "        el.style.opacity = '0';",
-      "        el.style.visibility = 'hidden';",
-      "        return { el: el, diff: diff, reverse: reverse, static: true };",
-      "      }",
       "      var fromX = reverse ? numeric(diff.x, -numeric(diff.fromX, 0)) : numeric(diff.fromX, -numeric(diff.x, 0));",
       "      var fromY = reverse ? numeric(diff.y, -numeric(diff.fromY, 0)) : numeric(diff.fromY, -numeric(diff.y, 0));",
       "      var fromScaleX = reverse ? numeric(diff.scaleX, inverseScale(diff.fromScaleX)) : numeric(diff.fromScaleX, inverseScale(diff.scaleX));",
@@ -2220,7 +2168,6 @@
       "        var el = item.el;",
       "        var diff = item.diff;",
       "        var reverse = item.reverse;",
-      "        if (item.static || diff.static) return;",
       "        var original = originals.get(el);",
       "        var finalOpacity = reverse ? diff.fromOpacity : diff.toOpacity;",
       "        var finalBackgroundColor = reverse ? diff.fromBackgroundColor : (diff.toBackgroundColor || diff.backgroundColor);",
@@ -2235,16 +2182,13 @@
       "        else el.style.borderRadius = original ? original.borderRadius : '';",
       "      });",
       "    }",
-      "    function playPreparedDiffsWithGsap(prepared, duration, ease, finishStateChange) {",
+      "    function playPreparedDiffsWithGsap(prepared, source, sourceFadeDuration, duration, ease, finishStateChange) {",
       "      if (!prepared.length || !canUseGsap() || typeof window.gsap.timeline !== 'function') return false;",
       "      var gsap = window.gsap;",
       "      var timeline = gsap.timeline({ onComplete: finishStateChange });",
-      "      var hasTween = false;",
       "      prepared.forEach(function (item) {",
       "        var diff = item.diff;",
       "        var reverse = item.reverse;",
-      "        if (item.static || diff.static) return;",
-      "        hasTween = true;",
       "        var finalOpacity = reverse ? diff.fromOpacity : diff.toOpacity;",
       "        var finalBackgroundColor = reverse ? diff.fromBackgroundColor : (diff.toBackgroundColor || diff.backgroundColor);",
       "        var finalBorderRadius = reverse ? diff.fromBorderRadius : numeric(diff.toBorderRadius, diff.borderRadius);",
@@ -2264,14 +2208,16 @@
       "        if (typeof finalBorderRadius === 'number') vars.borderRadius = finalBorderRadius;",
       "        timeline.to(item.el, vars, 0);",
       "      });",
-      "      if (!hasTween) { timeline.kill(); return false; }",
+      "      if (source) {",
+      "        source.style.pointerEvents = 'none';",
+      "        timeline.to(source, { autoAlpha: 0, duration: Math.max(0, sourceFadeDuration) / 1000, ease: toGsapEase(ease), overwrite: 'auto' }, 0);",
+      "      }",
       "      trackTween(timeline);",
       "      return true;",
       "    }",
       "    function muteSourceDiffs(diffs, reverse) {",
       "      var muted = [];",
       "      (diffs || []).forEach(function (diff) {",
-      "        if (diff.static) return;",
       "        var sourceId = reverse ? (diff.destinationNodeId || diff.nodeId) : (diff.sourceNodeId || diff.nodeId);",
       "        var el = find(sourceId);",
       "        if (!el || !diff.destinationNodeId) return;",
@@ -2281,65 +2227,6 @@
       "        muted.push({ el: el, diff: diff, reverse: reverse });",
       "      });",
       "      return muted;",
-      "    }",
-      "    function prepareSourceDiff(diff, reverse) {",
-      "      if (!diff || diff.static) return null;",
-      "      var sourceId = reverse ? (diff.destinationNodeId || diff.nodeId) : (diff.sourceNodeId || diff.nodeId);",
-      "      var el = find(sourceId);",
-      "      if (!el) return null;",
-      "      remember(el);",
-      "      var x = reverse ? numeric(diff.fromX, -numeric(diff.x, 0)) : numeric(diff.x, 0);",
-      "      var y = reverse ? numeric(diff.fromY, -numeric(diff.y, 0)) : numeric(diff.y, 0);",
-      "      var scaleX = reverse ? numeric(diff.fromScaleX, inverseScale(diff.scaleX)) : numeric(diff.scaleX, 1);",
-      "      var scaleY = reverse ? numeric(diff.fromScaleY, inverseScale(diff.scaleY)) : numeric(diff.scaleY, 1);",
-      "      var rotation = reverse ? numeric(diff.fromRotation, -numeric(diff.rotation, 0)) : numeric(diff.rotation, 0);",
-      "      var opacity = reverse ? diff.fromOpacity : diff.toOpacity;",
-      "      var backgroundColor = reverse ? diff.fromBackgroundColor : (diff.toBackgroundColor || diff.backgroundColor);",
-      "      var borderRadius = reverse ? diff.fromBorderRadius : numeric(diff.toBorderRadius, diff.borderRadius);",
-      "      return { el: el, diff: diff, reverse: reverse, x: x, y: y, scaleX: scaleX, scaleY: scaleY, rotation: rotation, opacity: opacity, backgroundColor: backgroundColor, borderRadius: borderRadius };",
-      "    }",
-      "    function prepareSourceDiffs(diffs, reverse) {",
-      "      var prepared = [];",
-      "      (diffs || []).forEach(function (diff) {",
-      "        var item = prepareSourceDiff(diff, reverse);",
-      "        if (item) prepared.push(item);",
-      "      });",
-      "      return prepared;",
-      "    }",
-      "    function playSourceDiffs(prepared) {",
-      "      prepared.forEach(function (item) {",
-      "        var el = item.el;",
-      "        var diff = item.diff;",
-      "        el.style.transition = transitionFor(diff);",
-      "        var transform = transformString(item.x, item.y, item.scaleX, item.scaleY, item.rotation);",
-      "        if (transform) el.style.transform = transform;",
-      "        if (typeof item.opacity === 'number') el.style.opacity = String(item.opacity);",
-      "        if (item.backgroundColor) el.style.backgroundColor = item.backgroundColor;",
-      "        if (typeof item.borderRadius === 'number') el.style.borderRadius = item.borderRadius + 'px';",
-      "      });",
-      "    }",
-      "    function playSourceDiffsWithGsap(prepared, duration, ease, finishStateChange) {",
-      "      if (!prepared.length || !canUseGsap() || typeof window.gsap.timeline !== 'function') return false;",
-      "      var gsap = window.gsap;",
-      "      var timeline = gsap.timeline({ onComplete: finishStateChange });",
-      "      prepared.forEach(function (item) {",
-      "        var vars = {",
-      "          x: item.x,",
-      "          y: item.y,",
-      "          scaleX: item.scaleX,",
-      "          scaleY: item.scaleY,",
-      "          rotation: item.rotation,",
-      "          duration: Math.max(0, duration) / 1000,",
-      "          ease: toGsapEase(ease),",
-      "          overwrite: 'auto'",
-      "        };",
-      "        if (typeof item.opacity === 'number') vars.autoAlpha = item.opacity;",
-      "        if (item.backgroundColor) vars.backgroundColor = item.backgroundColor;",
-      "        if (typeof item.borderRadius === 'number') vars.borderRadius = item.borderRadius;",
-      "        timeline.to(item.el, vars, 0);",
-      "      });",
-      "      trackTween(timeline);",
-      "      return true;",
       "    }",
       "    function applyDiff(diff) {",
       "      var el = find(diff.nodeId);",
@@ -2383,40 +2270,9 @@
       "      root.querySelectorAll('.fts-variant.is-active').forEach(function (item) {",
       "        if (item !== source && item !== destination) { setStateActive(item, false); item.style.opacity = ''; item.style.visibility = ''; item.style.transition = ''; item.style.pointerEvents = ''; }",
       "      });",
-      "      var sourcePrepared = source && diffs && diffs.length ? prepareSourceDiffs(diffs, reverse) : [];",
-      "      var hasStaticDiff = !!(source && diffs && diffs.some(function (diff) { return diff.static; }));",
-      "      activePreparedLayers = [];",
-      "      activeMutedLayers = [];",
-      "      var finished = false;",
-      "      function finishStateChange() {",
-      "        if (finished) return;",
-      "        finished = true;",
-      "        setStateActive(destination, true);",
-      "        if (source && source !== destination) {",
-      "          setStateActive(source, false);",
-      "          source.style.opacity = '';",
-      "          source.style.visibility = '';",
-      "          source.style.transition = '';",
-      "          source.style.pointerEvents = '';",
-      "        }",
-      "        clearMotionStyles();",
-      "        destination.style.opacity = '';",
-      "        destination.style.visibility = '';",
-      "        destination.style.transition = '';",
-      "        scheduleAfterTimeoutsForState(destination, 0);",
-      "      }",
-      "      if (sourcePrepared.length || hasStaticDiff) {",
-      "        if (source && source !== destination) source.style.pointerEvents = 'none';",
-      "        activePreparedLayers = sourcePrepared;",
-      "        activeMutedLayers = [];",
-      "        if (sourcePrepared.length && playSourceDiffsWithGsap(sourcePrepared, duration, ease, finishStateChange)) return;",
-      "        playSourceDiffs(sourcePrepared);",
-      "        transitionTimer = window.setTimeout(function () { transitionTimer = null; finishStateChange(); }, duration);",
-      "        timers.push(transitionTimer);",
-      "        return;",
-      "      }",
       "      var prepared = source && diffs && diffs.length ? prepareDestinationDiffs(diffs, reverse) : [];",
       "      var muted = prepared.length && source ? muteSourceDiffs(diffs, reverse) : [];",
+      "      var sourceFadeDuration = prepared.length ? Math.min(duration, 180) : duration;",
       "      var legacy = [];",
       "      if (source && diffs && diffs.length && !prepared.length) {",
       "        diffs.forEach(function (diff) {",
@@ -2426,15 +2282,36 @@
       "      }",
       "      activePreparedLayers = prepared.length ? prepared : legacy;",
       "      activeMutedLayers = muted;",
+      "      var finished = false;",
+      "      function finishStateChange() {",
+      "        if (finished) return;",
+      "        finished = true;",
+      "        clearMotionStyles();",
+      "        if (source && source !== destination) {",
+      "          setStateActive(source, false);",
+      "          source.style.opacity = '';",
+      "          source.style.visibility = '';",
+      "          source.style.transition = '';",
+      "          source.style.pointerEvents = '';",
+      "        }",
+      "        destination.style.opacity = '';",
+      "        destination.style.visibility = '';",
+      "        destination.style.transition = '';",
+      "        scheduleAfterTimeoutsForState(destination, 0);",
+      "      }",
       "      if (prepared.length) {",
       "        destination.style.transition = 'none';",
       "        destination.style.opacity = '1';",
       "        destination.style.visibility = 'visible';",
       "        setStateActive(destination, true);",
       "        destination.getBoundingClientRect();",
-      "        if (source && source !== destination) source.style.pointerEvents = 'none';",
-      "        if (playPreparedDiffsWithGsap(prepared, duration, ease, finishStateChange)) return;",
+      "        if (playPreparedDiffsWithGsap(prepared, source && source !== destination ? source : null, sourceFadeDuration, duration, ease, finishStateChange)) return;",
       "        playPreparedDiffs(prepared);",
+      "        if (source && source !== destination) {",
+      "          source.style.transition = 'opacity ' + sourceFadeDuration + 'ms ' + ease + ', visibility ' + sourceFadeDuration + 'ms ' + ease;",
+      "          source.style.opacity = '0';",
+      "          source.style.pointerEvents = 'none';",
+      "        }",
       "        transitionTimer = window.setTimeout(function () { transitionTimer = null; finishStateChange(); }, duration);",
       "        timers.push(transitionTimer);",
       "        return;",

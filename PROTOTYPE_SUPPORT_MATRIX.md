@@ -76,7 +76,6 @@ The export report includes a `prototypeReactions` array with the raw interaction
 | Smart Animate opacity | Supported | Destination layer interpolates from source opacity to final opacity |
 | Smart Animate solid fill color | Supported | Destination layer interpolates from source fill to final `background-color` |
 | Smart Animate corner radius | Supported | Destination layer interpolates from source radius to final radius |
-| Smart Animate unchanged matched layers | Supported | Static matched layers are held during looped transitions so after-delay routes do not flash like a whole-frame refresh |
 | Custom cubic bezier easing | Supported | CSS `cubic-bezier()` |
 | Ease in / ease out / ease in-out | Supported | CSS easing keyword |
 | Spring animation | Approximation | Smooth cubic bezier and report note |

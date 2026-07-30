@@ -566,7 +566,6 @@ type ShopifyExportModel = {
 - Given a layer named `home_solution.svg`, when exported, then Motion attempts SVG export and uses a clean Shopify-safe filename stem.
 - Given a prototype route that loops between variants/components/frames, when exported, then the Motion tab, manifest, and report show the loop.
 - Given GSAP already exists on the Shopify theme, when Smart Animate matched layers play, then Motion uses GSAP timeline playback with a no-dependency fallback.
-- Given an after-delay prototype route loops back to an earlier variant, when Smart Animate matched layers play, then unchanged matched layers are held and the whole source variant is not faded, preventing refresh-like flashing.
 - Given image layer drop shadows in Figma, when exported, then the shadow is emitted on the generated layer wrapper and the inner image file asset remains shadow-free.
 - Given repeated text/image styles across multiple layers, when exported, then common CSS properties are grouped and each layer keeps only its unique position, size, rotation, and z-index declarations.
 - Given a ZIP export, when generated, then `assets/motion-figma-gsap-runtime.css` and `assets/motion-figma-gsap-runtime.js` are included and listed in manifest/report files.
