@@ -18,5 +18,6 @@
 - Preserves static layer rotation and Figma text weight/style/alignment/letter-spacing/line-height while still inheriting Shopify theme font family.
 - Packages shared theme assets at `assets/motion-figma-gsap-runtime.css` and `assets/motion-figma-gsap-runtime.js`.
 - Groups repeated generated CSS declarations across similar layers to reduce Copy Code noise.
+- Adds static matched-layer hold for Smart Animate loops, preventing after-delay variant routes from flashing like a whole-frame refresh when they loop back.
 - Preserves raw prototype reactions in the conversion report.
 - Adds onboarding, copy/paste Shopify guide, privacy note, marketplace listing copy, icon, cover, and validation smoke test.
