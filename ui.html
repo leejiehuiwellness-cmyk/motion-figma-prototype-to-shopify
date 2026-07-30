@@ -183,7 +183,7 @@
 
     .tabs {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(6, 1fr);
       border-bottom: 1px solid var(--border);
     }
 
@@ -297,6 +297,27 @@
       margin: 8px 0;
     }
 
+    .asset-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(140px, 1fr);
+      gap: 8px;
+      align-items: end;
+      margin-bottom: 8px;
+    }
+
+    .asset-row input {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+    }
+
+    .asset-actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      margin: 8px 0 12px;
+    }
+
     ol {
       padding-left: 18px;
       margin: 8px 0 14px;
@@ -350,6 +371,16 @@
           <option value="3">3x</option>
         </select>
       </div>
+      <div class="field">
+        <label for="scrollAnimationMode">Animation mode</label>
+        <select id="scrollAnimationMode">
+          <option value="enter-once">Enter Once</option>
+          <option value="enter-replay">Enter Replay</option>
+          <option value="infinite-loop">Infinite Loop</option>
+          <option value="scroll-scrub">Scroll Scrub</option>
+          <option value="pin-sequence">Pin Sequence</option>
+        </select>
+      </div>
       <label class="checks">
         <input id="includeVideoFallback" type="checkbox" checked>
         Video fallback
@@ -370,6 +401,7 @@
     <nav class="tabs" aria-label="Plugin sections">
       <button class="tab active" data-tab="overview">Overview</button>
       <button class="tab" data-tab="copy">Copy Code</button>
+      <button class="tab" data-tab="assets">Assets</button>
       <button class="tab" data-tab="bindings">Bindings</button>
       <button class="tab" data-tab="motion">Motion</button>
       <button class="tab" data-tab="guide">Guide</button>
@@ -395,6 +427,16 @@
         <textarea id="copyBox" readonly placeholder="Generate an export first."></textarea>
       </div>
 
+      <div id="assets" class="panel">
+        <h2>Asset filenames</h2>
+        <div class="notice">Rename exported image/SVG assets here, then click <strong>Save and Run</strong>. Copy Code, Copy CSS, Copy JS, Download ZIP, manifest, and report will regenerate with the saved asset filenames.</div>
+        <div class="asset-actions">
+          <span class="muted">SVG force layer names: <code>logo.svg</code>, <code>Logo [svg]</code>, <code>Logo #svg</code>, or <code>Logo export=svg</code>.</span>
+          <button id="saveAssetRenames" class="primary" type="button">Save and Run</button>
+        </div>
+        <div id="assetsTable"></div>
+      </div>
+
       <div id="bindings" class="panel">
         <h2>Liquid bindings</h2>
         <div id="bindingsTable"></div>
@@ -407,7 +449,7 @@
         <h2>Prototype motion</h2>
         <div id="motionTable"></div>
         <div class="notice">
-          This v1 reads Figma prototype triggers, actions, destinations, transitions, easing, duration, overlays, and Smart Animate-like matching layer diffs. Drag, variables, conditionals, video runtime actions, and scroll-linked behavior are reported as warnings.
+          Motion reads Figma prototype triggers, actions, destinations, transitions, easing, duration, overlays, and Smart Animate-like matching layer diffs. The Animation mode setting controls Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, or Pin Sequence behavior in the generated Shopify runtime.
         </div>
       </div>
 
@@ -419,7 +461,9 @@
           <li>If you select a child layer, Motion exports the nearest supported ancestor as the Shopify section boundary.</li>
           <li>For Shopify dynamic content, rename layers with data names such as <code>product.title</code>, <code>product.price</code>, <code>product.image</code>, <code>collection.grid</code>, <code>menu.main</code>, and <code>cart.count</code>.</li>
           <li>Add prototype interactions in Figma Prototype mode. Supported v1 interactions include click, hover, press, mouse enter/leave, mouse down/up, after delay, navigate, swap, change-to, open overlay, back, close, and URL.</li>
+          <li>Choose Animation mode: Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, or Pin Sequence.</li>
           <li>Run this plugin, review warnings, then click <strong>Generate export</strong>.</li>
+          <li>Open Assets to rename generated image/SVG files, then click <strong>Save and Run</strong> so Copy Code, Copy CSS, Copy JS, ZIP, manifest, and report all use the same filenames.</li>
           <li>Use <strong>Copy Code</strong> for the Shopify section file, or download the ZIP for the Liquid, optional CSS/JavaScript developer copies, manifest, report, and assets.</li>
           <li>In Shopify Admin, go to Online Store > Themes > Edit code > Sections, add a new section with the generated file name, paste the Liquid, save, then add the section in the theme editor.</li>
           <li>If the section references image or SVG assets, upload those generated files from the ZIP's <code>assets</code> folder into the Shopify theme assets folder. CSS and JavaScript are already included in Copy Code mode.</li>
@@ -433,13 +477,15 @@
       summary: null,
       files: [],
       desktopFrame: null,
-      mobileFrame: null
+      mobileFrame: null,
+      assetRenames: {}
     };
 
     var statusEl = document.getElementById("status");
     var summaryEl = document.getElementById("summary");
     var warningsEl = document.getElementById("warnings");
     var filesEl = document.getElementById("files");
+    var assetsEl = document.getElementById("assetsTable");
     var bindingsEl = document.getElementById("bindingsTable");
     var motionEl = document.getElementById("motionTable");
     var copyBox = document.getElementById("copyBox");
@@ -460,6 +506,12 @@
     });
 
     document.getElementById("export").addEventListener("click", function () {
+      send("export");
+    });
+
+    document.getElementById("saveAssetRenames").addEventListener("click", function () {
+      collectAssetRenames();
+      setStatus("Saving asset filenames and regenerating...");
       send("export");
     });
 
@@ -512,6 +564,7 @@
       if (message.type === "scan-result" || message.type === "export-result") {
         state.summary = message.summary;
         state.files = message.files || [];
+        syncAssetRenamesFromSummary();
         setStatus(message.type === "export-result" ? "Export ready" : "Scan ready");
         render();
         return;
@@ -549,6 +602,8 @@
         desktopFrameId: state.desktopFrame ? state.desktopFrame.figmaId : "",
         mobileFrameId: state.mobileFrame ? state.mobileFrame.figmaId : "",
         assetScale: Number(document.getElementById("assetScale").value || 1),
+        assetRenames: state.assetRenames,
+        scrollAnimationMode: document.getElementById("scrollAnimationMode").value,
         includeVideoFallback: document.getElementById("includeVideoFallback").checked
       };
     }
@@ -561,6 +616,7 @@
       renderSummary();
       renderWarnings();
       renderFiles();
+      renderAssets();
       renderBindings();
       renderMotion();
       renderCopyDefault();
@@ -580,6 +636,7 @@
         return;
       }
       var counts = summary.counts || {};
+      var scrollAnimation = summary.scrollAnimation || {};
       var selection = summary.selection || {};
       var selected = selection.selected || {};
       var exportRoot = selection.exportRoot || summary.root || {};
@@ -592,6 +649,7 @@
         metric(counts.bindings || 0, "Liquid bindings"),
         metric(counts.interactions || 0, "Motion interactions"),
         metric(counts.warnings || 0, "Warnings"),
+        metric(scrollAnimation.label || scrollAnimation.mode || "Enter Once", "Animation mode"),
       ].join("");
     }
 
@@ -622,6 +680,54 @@
             copyText(file.content);
           }
         });
+      });
+    }
+
+    function renderAssets() {
+      var assets = state.summary && state.summary.assets ? state.summary.assets.filter(function (asset) {
+        return asset.status === "exported" && asset.shopifyFilename;
+      }) : [];
+      if (!assets.length) {
+        assetsEl.innerHTML = '<div class="notice">No exported image or SVG assets yet. Generate export with asset export enabled.</div>';
+        return;
+      }
+      assetsEl.innerHTML = assets.map(function (asset) {
+        var key = asset.defaultFilename || asset.shopifyFilename;
+        var value = state.assetRenames[key] || asset.shopifyFilename;
+        return [
+          '<div class="asset-row list-row">',
+          '  <div><strong>' + escapeHtml(asset.originalLayerName || "Asset") + '</strong><br>',
+          '  <span class="muted">Default: ' + escapeHtml(key) + '<br>Current: ' + escapeHtml(asset.shopifyFilename) + '<br>' + escapeHtml(asset.assetType || "asset") + ' · ' + escapeHtml(asset.sourceType || "figma") + '</span></div>',
+          '  <div class="field"><label>Shopify asset filename</label><input data-asset-rename-key="' + escapeHtml(key) + '" value="' + escapeHtml(value) + '"></div>',
+          '</div>'
+        ].join("");
+      }).join("");
+      assetsEl.querySelectorAll("[data-asset-rename-key]").forEach(function (input) {
+        input.addEventListener("input", function () {
+          collectAssetRenames();
+          setStatus("Asset filename changed. Click Save and Run.");
+        });
+      });
+    }
+
+    function collectAssetRenames() {
+      var next = {};
+      document.querySelectorAll("[data-asset-rename-key]").forEach(function (input) {
+        var key = input.getAttribute("data-asset-rename-key");
+        var value = input.value.trim();
+        if (key && value) next[key] = value;
+      });
+      state.assetRenames = next;
+      return next;
+    }
+
+    function syncAssetRenamesFromSummary() {
+      var assets = state.summary && state.summary.assets ? state.summary.assets : [];
+      assets.forEach(function (asset) {
+        if (!asset.defaultFilename || !asset.shopifyFilename) return;
+        if (!state.assetRenames[asset.defaultFilename]) {
+          state.assetRenames[asset.defaultFilename] = asset.shopifyFilename;
+        }
       });
     }
 

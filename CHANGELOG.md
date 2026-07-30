@@ -8,5 +8,8 @@
 - Adds Shopify layer naming conventions for product, collection, menu, and cart bindings.
 - Reads Figma prototype reactions and compiles supported interaction motion to storefront JavaScript.
 - Plays Smart Animate component/state chains with destination-layer interpolation so Shopify motion feels closer to Figma Play instead of showing each state as a separate frame.
+- Adds scroll animation modes: Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, and Pin Sequence.
+- Adds Assets tab rename workflow with Save and Run regeneration for Copy Code, Copy CSS, Copy JS, ZIP, manifest, and report.
+- Supports SVG-forcing layer names such as `logo.svg`, `Logo [svg]`, `Logo #svg`, and `Logo export=svg`.
 - Preserves raw prototype reactions in the conversion report.
 - Adds onboarding, copy/paste Shopify guide, privacy note, marketplace listing copy, icon, cover, and validation smoke test.

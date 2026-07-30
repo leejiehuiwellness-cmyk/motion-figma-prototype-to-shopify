@@ -13,7 +13,7 @@ Real plugin exports are generated from your selected Figma frame, component, com
   endif
 %}
 
-<section class="fts-motion-figma-prototype-to-shopify" data-motion-figma-prototype-to-shopify>
+<section class="fts-motion-figma-prototype-to-shopify" data-motion-figma-prototype-to-shopify data-fts-scroll-mode="enter-once">
   <div class="fts-stage" data-fts-stage style="--stage-width: 960; --stage-height: 420;">
     <div class="fts-variant is-active" data-fts-state="state-default" data-figma-node-id="state-default" aria-hidden="false">
       <div class="fts-node n-example-root" data-fts-node="example-root" data-figma-node-id="example-root">
@@ -62,7 +62,7 @@ Real plugin exports are generated from your selected Figma frame, component, com
     </div>
   </div>
 
-  <script type="application/json" data-fts-motion-config>{"version":1,"interactions":[{"triggerNodeId":"product-add-to-cart","trigger":"ON_HOVER","reversible":true,"actions":[{"kind":"change-variant","sourceNodeId":"state-default","destinationNodeId":"state-hover","transition":{"type":"SMART_ANIMATE","durationMs":420,"cssEase":"ease-out"},"diffs":[{"nodeId":"product-add-to-cart","sourceNodeId":"product-add-to-cart","destinationNodeId":"product-add-to-cart-hover","scaleX":1.08,"scaleY":1.08,"fromScaleX":0.9259,"fromScaleY":0.9259,"duration":420,"ease":"ease-out"}]}]}]}</script>
+  <script type="application/json" data-fts-motion-config>{"version":1,"scrollAnimation":{"mode":"enter-once","label":"Enter Once","start":"top 80%","end":"bottom 20%","scrub":1,"pinDistance":1600},"interactions":[{"triggerNodeId":"product-add-to-cart","trigger":"ON_HOVER","reversible":true,"actions":[{"kind":"change-variant","sourceNodeId":"state-default","destinationNodeId":"state-hover","transition":{"type":"SMART_ANIMATE","durationMs":420,"cssEase":"ease-out"},"diffs":[{"nodeId":"product-add-to-cart","sourceNodeId":"product-add-to-cart","destinationNodeId":"product-add-to-cart-hover","scaleX":1.08,"scaleY":1.08,"fromScaleX":0.9259,"fromScaleY":0.9259,"duration":420,"ease":"ease-out"}]}]}]}</script>
 </section>
 
 {% stylesheet %}

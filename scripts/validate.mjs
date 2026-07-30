@@ -70,7 +70,18 @@ for (const script of scripts) {
   "fts-stage",
   "codeMode",
   "Copy Code",
+  "assetRenames",
+  "Enter Once",
+  "Enter Replay",
+  "Infinite Loop",
+  "Scroll Scrub",
+  "Pin Sequence",
   "scheduleAfterTimeoutsForState",
+  "setupScrollAnimation",
+  "setupScrollProgressAnimation",
+  "ScrollTrigger",
+  "data-fts-scroll-mode",
+  "forced-svg",
   "prepareDestinationDiffs",
   "playPreparedDiffs",
   "muteSourceDiffs",
@@ -79,9 +90,24 @@ for (const script of scripts) {
   "ON_HOVER",
   "AFTER_TIMEOUT",
   "Smart Animate",
+  "Pin Sequence",
   "shopify:section:load"
 ].forEach((needle) => {
   assert(code.includes(needle), `code.js missing ${needle}`);
+});
+
+[
+  "Save and Run",
+  "Asset filenames",
+  "assetRenames",
+  "Enter Once",
+  "Enter Replay",
+  "Infinite Loop",
+  "Scroll Scrub",
+  "Pin Sequence",
+  "Logo [svg]"
+].forEach((needle) => {
+  assert(ui.includes(needle), `ui.html missing ${needle}`);
 });
 
 const onboarding = read("ONBOARDING.md");
@@ -118,7 +144,9 @@ const supportMatrix = read("PROTOTYPE_SUPPORT_MATRIX.md");
   "SET_VARIABLE",
   "CONDITIONAL",
   "UPDATE_MEDIA_RUNTIME",
-  "Smart Animate"
+  "Smart Animate",
+  "Pin Sequence",
+  "Logo [svg]"
 ].forEach((needle) => {
   assert(supportMatrix.includes(needle), `PROTOTYPE_SUPPORT_MATRIX.md missing ${needle}`);
 });
@@ -140,6 +168,8 @@ const docsHome = read("docs/index.html");
   "product.title",
   "Shopify Admin",
   "Prototype motion",
+  "Save and Run",
+  "Pin Sequence",
   "Download source ZIP"
 ].forEach((needle) => {
   assert(docsHome.includes(needle), `docs/index.html missing ${needle}`);
@@ -188,6 +218,8 @@ assert(exportedLiquid.content.includes("\"name\": \"Mock Product Hero\""), "Sche
   "font-family: var(--font-body-family, inherit)",
   "font-family: var(--font-heading-family",
   "fts-stage",
+  "data-fts-scroll-mode=\"enter-once\"",
+  "\"scrollAnimation\":{\"mode\":\"enter-once\"",
   "fts-variant is-active",
   "data-motion-figma-prototype-to-shopify"
 ].forEach((needle) => {
@@ -204,9 +236,13 @@ assert(exportedCss.content.includes("font-family: var(--font-body-family, inheri
 assert(exportedCss.content.includes("width: 100vw"), "Generated CSS should break out to full viewport width");
 assert(exportedCss.content.includes("max-width: none"), "Generated stage should not cap full-width rendering at the Figma frame width");
 assert(exportedCss.content.includes("margin-left: calc(50% - 50vw)"), "Generated CSS should break out of Shopify page-width containers");
+assert(exportedCss.content.includes("is-fts-pinned-fallback"), "Generated CSS should include no-GSAP pin sequence fallback");
 assert(!exportedCss.content.includes("font-family: Inter"), "Generated CSS should not hard-code the Figma font family");
 assert(exportedJs.content.includes("function changeVariant"), "Optional JS copy missing real variant switching");
 assert(exportedJs.content.includes("scheduleAfterTimeoutsForState"), "Runtime should schedule AFTER_TIMEOUT from the active state only");
+assert(exportedJs.content.includes("setupScrollAnimation"), "Runtime should initialize scroll animation behavior");
+assert(exportedJs.content.includes("setupScrollProgressAnimation"), "Runtime should support Scroll Scrub and Pin Sequence");
+assert(exportedJs.content.includes("ScrollTrigger.create"), "Runtime should use GSAP ScrollTrigger when available");
 assert(exportedJs.content.includes("afterTimeoutInteractions.push"), "Runtime should collect state-scoped AFTER_TIMEOUT interactions");
 assert(exportedJs.content.includes("prepareDestinationDiffs"), "Runtime should prepare destination layers for smooth Smart Animate playback");
 assert(exportedJs.content.includes("playPreparedDiffs"), "Runtime should play destination-layer Smart Animate diffs");
@@ -215,6 +251,8 @@ assert(exportedJs.content.includes("window.gsap"), "Runtime should support optio
 assert(!exportedJs.content.includes("interaction.trigger === 'ON_CLICK'"), "Runtime should not discard Figma timed interactions for reduced-motion shortcuts");
 assert(!exportedJs.content.includes("root.style.opacity = '0.94'"), "Runtime must not fake dissolve with root opacity");
 assert(parsedManifest.interactions.some((item) => item.actions.some((action) => (action.diffs || []).some((diff) => diff.destinationNodeId && typeof diff.fromScaleX === "number"))), "Smart Animate diffs should include destination-layer start values");
+assert(parsedManifest.scrollAnimation?.mode === "enter-once", "Manifest should include selected scroll animation mode");
+assert(parsedReport.scrollAnimation?.mode === "enter-once", "Report should include selected scroll animation mode");
 
 const componentSetResult = await runComponentSetSmokeTest(code, ui, "set");
 assertComponentSetExport(componentSetResult, "COMPONENT_SET");
@@ -230,6 +268,16 @@ assert(schemaNameFallbackLiquid.path === "sections/home-feature.liquid", "File p
 assert(schemaNameFallbackLiquid.content.includes("\"name\": \"home_feature\""), "Default schema name should follow the plugin file prefix/name field");
 const responsiveResult = await runResponsiveFrameSmokeTest(code, ui);
 assertResponsiveFrameExport(responsiveResult);
+const responsiveManifest = JSON.parse(responsiveResult.files.find((file) => /manifest\.json$/.test(file.path)).content);
+const defaultRenameAsset = responsiveManifest.assets.find((asset) => asset.status === "exported" && asset.sourceType === "image-fill" && asset.defaultFilename?.startsWith("home-feature-mobile-cn-mobile-badge"));
+assert(defaultRenameAsset, "Responsive manifest should expose default asset filenames for user rename");
+const renamedResponsiveResult = await runResponsiveFrameSmokeTest(code, ui, {
+  scrollAnimationMode: "pin-sequence",
+  assetRenames: {
+    [defaultRenameAsset.defaultFilename]: "jiehui custom feature.png"
+  }
+});
+assertRenamedResponsiveExport(renamedResponsiveResult, defaultRenameAsset.defaultFilename);
 
 console.log("Validation passed.");
 
@@ -481,7 +529,7 @@ async function runComponentSetSmokeTest(code, ui, selectionMode) {
   return messages.find((message) => message.type === "export-result");
 }
 
-async function runResponsiveFrameSmokeTest(code, ui) {
+async function runResponsiveFrameSmokeTest(code, ui, extraSettings = {}) {
   let uiHandler = null;
   const messages = [];
   const pngBytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
@@ -502,11 +550,19 @@ async function runResponsiveFrameSmokeTest(code, ui) {
   const mobileOnly = node("21:3", "Mobile badge", "RECTANGLE", 24, 320, 120, 120, {
     fills: [{ type: "IMAGE", imageHash: "responsive-mobile-only-hash", scaleMode: "FILL", visible: true }]
   });
+  const forcedSvg = node("21:4", "Mobile logo [svg]", "RECTANGLE", 180, 320, 120, 72, {
+    fills: [{ type: "IMAGE", imageHash: "responsive-logo-hash", scaleMode: "FILL", visible: true }],
+    async exportAsync(settings) {
+      if (settings?.format === "SVG_STRING") return "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 120 72\"><rect width=\"120\" height=\"72\" fill=\"#26a6a6\"/></svg>";
+      return pngBytes;
+    }
+  });
   desktopFrame.children = [desktopShared];
-  mobileFrame.children = [mobileShared, mobileOnly];
+  mobileFrame.children = [mobileShared, mobileOnly, forcedSvg];
   desktopShared.parent = desktopFrame;
   mobileShared.parent = mobileFrame;
   mobileOnly.parent = mobileFrame;
+  forcedSvg.parent = mobileFrame;
 
   const context = {
     __html__: ui,
@@ -552,7 +608,7 @@ async function runResponsiveFrameSmokeTest(code, ui) {
         return null;
       },
       getImageByHash(hash) {
-        if (hash !== "responsive-shared-hash" && hash !== "responsive-mobile-only-hash") return null;
+        if (hash !== "responsive-shared-hash" && hash !== "responsive-mobile-only-hash" && hash !== "responsive-logo-hash") return null;
         return {
           async getBytesAsync() {
             return pngBytes;
@@ -574,7 +630,8 @@ async function runResponsiveFrameSmokeTest(code, ui) {
       languageLabel: "cn",
       desktopFrameId: desktopFrame.id,
       mobileFrameId: mobileFrame.id,
-      includeVideoFallback: false
+      includeVideoFallback: false,
+      ...extraSettings
     }
   });
   await new Promise((resolve) => setTimeout(resolve, 0));
@@ -676,15 +733,19 @@ function assertComponentSetExport(exportMessage, selectedType) {
   assert(css.content.includes("--stage-height: 180"), "Stage height should use one variant height");
   assert(css.content.includes("width: 100vw"), "Component Set CSS should render full viewport width");
   assert(css.content.includes("max-width: none"), "Component Set stage should not cap at Figma variant width");
+  assert(css.content.includes("is-fts-pinned-fallback"), "Component Set CSS should include pin sequence fallback styles");
   assert(css.content.includes(".fts-variant {"), "CSS missing variant stacking");
   assert(js.content.includes("function changeVariant"), "Runtime missing changeVariant");
   assert(js.content.includes("scheduleAfterTimeoutsForState"), "Runtime missing state-scoped AFTER_TIMEOUT scheduling");
+  assert(js.content.includes("setupScrollAnimation"), "Runtime missing scroll animation setup");
+  assert(js.content.includes("ScrollTrigger.create"), "Runtime missing optional ScrollTrigger support");
   assert(js.content.includes("prepareDestinationDiffs"), "Runtime missing destination-layer Smart Animate preparation");
   assert(js.content.includes("muteSourceDiffs"), "Runtime missing matched source-layer muting");
   assert(js.content.includes("window.gsap"), "Runtime missing optional GSAP enhancement");
   assert(js.content.includes("shopify:section:load"), "Runtime missing Shopify load lifecycle");
   assert(js.content.includes("shopify:section:unload"), "Runtime missing Shopify unload lifecycle");
   assert(manifest.states.length === 4, "Manifest should include all four variants");
+  assert(manifest.scrollAnimation?.mode === "enter-once", "Component Set manifest should include scroll animation mode");
   assert(manifest.interactions.length >= 4, "Manifest should include recursive/circular prototype chain interactions");
   assert(manifest.interactions.some((item) => item.delayMs === 1000), "AFTER_TIMEOUT delay should be stored in milliseconds");
   assert(manifest.interactions.some((item) => item.actions.some((action) => action.transition?.durationMs === 2000)), "Figma transition duration should be stored in milliseconds");
@@ -712,6 +773,7 @@ function assertResponsiveFrameExport(exportMessage) {
   assert(liquid.content.includes("fts-responsive--desktop"), "Responsive Liquid missing desktop viewport");
   assert(liquid.content.includes("fts-responsive--mobile"), "Responsive Liquid missing mobile viewport");
   assert(liquid.content.match(/data-fts-viewport=/g).length === 2, "Desktop and mobile viewports should initialize independently");
+  assert(liquid.content.includes("data-fts-scroll-mode=\"enter-once\""), "Responsive Liquid should include selected animation mode");
   assert(liquid.content.includes("<script>"), "Copy Code should inline runtime with a script tag");
   assert(!liquid.content.includes("{% javascript %}"), "Copy Code should not use Shopify javascript block");
   assert(css.content.includes(".fts-responsive--desktop { display: block; }"), "Responsive CSS missing desktop default display");
@@ -721,11 +783,34 @@ function assertResponsiveFrameExport(exportMessage) {
   assert(manifest.responsive.length === 2, "Manifest should include desktop and mobile responsive frame summaries");
   assert(manifest.responsive.some((item) => item.key === "desktop" && item.stage.width === 1440), "Manifest missing desktop stage");
   assert(manifest.responsive.some((item) => item.key === "mobile" && item.stage.width === 390), "Manifest missing mobile stage");
+  assert(manifest.scrollAnimation?.mode === "enter-once", "Manifest missing responsive scroll animation mode");
   const imageAssets = manifest.assets.filter((asset) => asset.status === "exported" && asset.sourceType === "image-fill");
   assert(imageAssets.some((asset) => asset.shopifyFilename.startsWith("home-feature-desktop-cn-shared-product-image")), "Desktop asset filename should include desktop and language label");
   assert(imageAssets.some((asset) => asset.shopifyFilename.startsWith("home-feature-mobile-cn-mobile-badge")), "Mobile asset filename should include mobile and language label");
   const shared = imageAssets.find((asset) => asset.shopifyFilename.startsWith("home-feature-desktop-cn-shared-product-image"));
   assert(shared && shared.usedBy.length === 2, "Shared desktop/mobile image asset should be deduplicated and record both uses");
+  assert(shared.defaultFilename === shared.shopifyFilename, "Unrenamed asset should keep default filename in manifest");
+  assert(manifest.assets.some((asset) => asset.status === "exported" && asset.sourceType === "forced-svg" && asset.shopifyFilename.endsWith(".svg")), "Layer name [svg] should force SVG asset export");
+}
+
+function assertRenamedResponsiveExport(exportMessage, originalDefaultFilename) {
+  assert(exportMessage, "Renamed responsive export did not produce a result");
+  const liquid = exportMessage.files.find((file) => /^sections\/.*\.liquid$/.test(file.path));
+  const css = exportMessage.files.find((file) => /^assets\/.*\.css$/.test(file.path));
+  const js = exportMessage.files.find((file) => /^assets\/.*\.js$/.test(file.path));
+  const manifest = JSON.parse(exportMessage.files.find((file) => /manifest\.json$/.test(file.path)).content);
+  const renamed = manifest.assets.find((asset) => asset.defaultFilename === originalDefaultFilename);
+  assert(renamed, "Renamed asset missing from manifest");
+  assert(renamed.shopifyFilename === "jiehui-custom-feature.png", "Asset rename should be Shopify-safe and preserve extension");
+  assert(renamed.renamed === true, "Manifest should mark asset as renamed");
+  const liquidAssetRefs = [...liquid.content.matchAll(/{{ '([^']+)' \| asset_url/g)].map((match) => match[1]);
+  assert(liquid.content.includes("jiehui-custom-feature.png"), `Copy Code Liquid should reference renamed asset file. Found refs: ${liquidAssetRefs.join(", ")}`);
+  assert(!liquid.content.includes(originalDefaultFilename), "Copy Code Liquid should not reference old asset filename after Save and Run");
+  assert(exportMessage.files.some((file) => file.path === "assets/jiehui-custom-feature.png"), "ZIP file list should include renamed asset path");
+  assert(css.content.includes("is-fts-pinned-fallback"), "Copy CSS should include pin sequence fallback after Save and Run");
+  assert(js.content.includes("setupScrollProgressAnimation"), "Copy JS should include scroll progress runtime after Save and Run");
+  assert(manifest.scrollAnimation?.mode === "pin-sequence", "Save and Run should regenerate with selected Pin Sequence mode");
+  assert(liquid.content.includes("data-fts-scroll-mode=\"pin-sequence\""), "Copy Code Liquid should include selected Pin Sequence mode");
 }
 
 function read(path) {

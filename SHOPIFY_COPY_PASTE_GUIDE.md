@@ -11,9 +11,11 @@ For a ready-made smoke test before running the plugin in Figma, use `examples/ex
 3. Click Set Desktop.
 4. Optional: select the mobile frame/section and click Set Mobile.
 5. Choose Language label: `en`, `cn`, or `my`.
-6. Click Generate export.
-7. Open the Copy Code tab.
-8. Click Copy Code.
+6. Choose Animation mode: Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, or Pin Sequence.
+7. Click Generate export.
+8. Optional: open Assets, rename exported image/SVG filenames, then click Save and Run.
+9. Open the Copy Code tab.
+10. Click Copy Code.
 
 ## B. In Shopify Admin
 
@@ -34,10 +36,12 @@ If you leave Schema name as the default and set File name to `home_feature`, the
 
 Responsive asset filenames include the frame mode and language label, for example `home-feature-desktop-en-*` and `home-feature-mobile-en-*`. Reused component/image assets are deduplicated in the ZIP and shared by the desktop and mobile code.
 
-7. Delete the starter code Shopify creates.
-8. Paste the full Liquid copied from the plugin.
-9. Click Save.
-10. CSS and JavaScript are already inside the copied section in Copy Code mode.
+If you renamed assets in the plugin, upload the renamed files shown in the Assets tab or exported manifest. Copy Code, Copy CSS, Copy JS, and Download ZIP all update after Save and Run.
+
+11. Delete the starter code Shopify creates.
+12. Paste the full Liquid copied from the plugin.
+13. Click Save.
+14. CSS and JavaScript are already inside the copied section in Copy Code mode.
 
 ## C. Add the Section to a Page
 
@@ -79,6 +83,7 @@ After saving, Shopify should render:
 - Font family, font style, and font weight inherited from the Shopify theme.
 - Supported Figma prototype animation such as click, hover, delay, overlay, and Smart Animate-style diffs.
 - Smoother component/state motion: matched destination layers animate from the source layer position, size, rotation, opacity, color, and radius instead of showing every Figma state as a separate frame.
+- Selected scroll animation mode: Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, or Pin Sequence.
 
 ## F. Common Fixes
 
@@ -91,3 +96,4 @@ After saving, Shopify should render:
 | Menu is blank | Choose Main menu in section settings. |
 | Animation does not move | Check `motion-figma-prototype-to-shopify-report.json` for unsupported prototype features. |
 | Animation looks like a frame slideshow | Regenerate with the latest plugin and keep matching source/destination layer names consistent. The latest runtime uses destination-layer Smart Animate playback instead of whole-frame snapshots when safe layer matches are found. |
+| Renamed asset is missing | Click Save and Run after renaming, then upload the regenerated filename from the ZIP `assets/` folder. |

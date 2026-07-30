@@ -63,10 +63,22 @@ The plugin reads Figma prototype interaction details from the selected flow:
 - Destination: the target frame or overlay.
 - Animation: dissolve, movement, push/slide, Smart Animate-like matching layer changes.
 - Direction, duration, and easing.
+- Scroll animation mode: Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, or Pin Sequence.
 
 Keep names consistent between source and destination frames if you want Smart Animate-style conversion. Figma Smart Animate matches layers by name and hierarchy; this plugin follows the same idea for Shopify motion diffs. When a safe match exists, Motion animates the destination layer from the source layer geometry to its final Shopify geometry so component animation chains feel continuous instead of like separate frame snapshots.
 
 For the complete trigger/action/transition support table, read `PROTOTYPE_SUPPORT_MATRIX.md`. It follows Figma's official "Guide to prototyping in Figma" and the Figma Plugin API reaction model.
+
+## 3.1 Force SVG Asset Export
+
+Vector layers export as SVG automatically. If a designer wants an image/frame layer to export as SVG when Figma supports it, name the layer with one of these formats:
+
+```text
+logo.svg
+Logo [svg]
+Logo #svg
+Logo export=svg
+```
 
 ## 4. Run the Plugin
 
@@ -76,9 +88,11 @@ For the complete trigger/action/transition support table, read `PROTOTYPE_SUPPOR
 4. Click Set Desktop.
 5. Optional: select the mobile frame/section and click Set Mobile.
 6. Choose Language label: `en`, `cn`, or `my`. Exported assets use names such as `home-feature-desktop-en-*` and `home-feature-mobile-en-*`.
-7. Click Rescan if you changed the selection.
-8. Review Overview, Bindings, Motion, and warnings.
-9. Click Generate export.
+7. Choose Animation mode: Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, or Pin Sequence.
+8. Click Rescan if you changed the selection.
+9. Review Overview, Bindings, Motion, and warnings.
+10. Click Generate export.
+11. Optional: open Assets, rename exported image/SVG files, then click Save and Run so Copy Code, Copy CSS, Copy JS, ZIP, manifest, and report all use the new filenames.
 
 ## 5. Copy to Shopify
 
@@ -91,7 +105,7 @@ Fastest path:
 5. In the `sections` folder, click Add a new section.
 6. Name it `motion-figma-prototype-to-shopify`, or use the file prefix shown in the plugin.
 7. Replace all generated starter code with the copied Liquid.
-8. Upload referenced image/SVG assets from the ZIP as needed. CSS and JavaScript are already included inside the copied section.
+8. Upload referenced image/SVG assets from the ZIP as needed, using the renamed filenames if you changed them in the Assets tab. CSS and JavaScript are already included inside the copied section.
 9. Save.
 10. Open Customize theme.
 11. Add the section to a page.

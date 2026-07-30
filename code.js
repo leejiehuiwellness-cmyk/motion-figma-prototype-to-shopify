@@ -35,6 +35,13 @@
     OVERLAY: true,
     CHANGE_TO: true
   };
+  var SCROLL_ANIMATION_MODES = {
+    "enter-once": "Enter Once",
+    "enter-replay": "Enter Replay",
+    "infinite-loop": "Infinite Loop",
+    "scroll-scrub": "Scroll Scrub",
+    "pin-sequence": "Pin Sequence"
+  };
   var VECTOR_TYPES = {
     VECTOR: true,
     BOOLEAN_OPERATION: true,
@@ -165,7 +172,8 @@
       assets: [],
       assetManifest: [],
       assetHashMap: {},
-      assetKeyMap: {}
+      assetKeyMap: {},
+      assetFilenameMap: {}
     };
     var classPrefix = "fts-" + slug(settings.filePrefix || exportRequests[0].root.name || "section", "section");
     var sectionType = slug(settings.filePrefix || "motion-figma-prototype-to-shopify", "motion-figma-prototype-to-shopify");
@@ -190,6 +198,8 @@
     var motion = {
       version: 1,
       generatedAt: new Date().toISOString(),
+      scrollAnimation: settings.scrollAnimation,
+      stateOrder: flatten(viewports.map(function (viewport) { return viewport.motion.stateOrder || []; })),
       interactions: flatten(viewports.map(function (viewport) { return viewport.motion.interactions; }))
     };
     var selectionInfo = primaryViewport.selection;
@@ -227,6 +237,7 @@
         height: rootModel.height
       },
       codeMode: settings.codeMode,
+      scrollAnimation: settings.scrollAnimation,
       stage: stage,
       counts: {
         nodes: countNodes(states),
@@ -238,6 +249,7 @@
         warnings: warnings.length
       },
       warnings: warnings,
+      assets: shared.assetManifest.map(assetSummary),
       bindings: bindings,
       interactions: motion.interactions.map(function (item) {
         return {
@@ -280,6 +292,7 @@
       assetIndex: 0,
       assetHashMap: base.shared.assetHashMap,
       assetKeyMap: base.shared.assetKeyMap,
+      assetFilenameMap: base.shared.assetFilenameMap,
       destinationIds: {},
       classPrefix: base.classPrefix,
       sectionType: base.sectionType,
@@ -304,6 +317,16 @@
       startStateFigmaId: startState ? startState.figmaId : rootModel.figmaId,
       startStateName: startState ? startState.name : rootModel.name
     };
+    motion.scrollAnimation = base.settings.scrollAnimation;
+    motion.stateOrder = states.map(function (state) {
+      return {
+        id: state.id,
+        figmaNodeId: state.figmaId,
+        name: state.name
+      };
+    });
+    motion.startStateId = stage.startStateId;
+    motion.startStateFigmaId = stage.startStateFigmaId;
 
     if (base.includeAssets) {
       await maybeExportRootPreview(request.root, ctx);
@@ -465,11 +488,51 @@
       desktopFrameId: String(raw.desktopFrameId || "").trim(),
       mobileFrameId: String(raw.mobileFrameId || "").trim(),
       assetScale: assetScale,
+      assetRenames: normalizeAssetRenames(raw.assetRenames),
+      scrollAnimation: normalizeScrollAnimationSettings(raw),
       codeMode: raw.codeMode === "external" ? "external" : "inline",
       includeVideoFallback: raw.includeVideoFallback !== false,
       includeInlineAssets: raw.includeInlineAssets !== false,
       reducedMotionMode: raw.reducedMotionMode || "skip"
     };
+  }
+
+  function normalizeScrollAnimationSettings(raw) {
+    var mode = normalizeScrollAnimationMode(raw.scrollAnimationMode || raw.animationMode || "enter-once");
+    var scrub = Number(raw.scrollScrub || raw.scrub || 1);
+    if (!scrub || scrub < 0) scrub = 1;
+    if (scrub > 5) scrub = 5;
+    var pinDistance = Number(raw.pinDistance || raw.scrollPinDistance || 1600);
+    if (!pinDistance || pinDistance < 400) pinDistance = 1600;
+    if (pinDistance > 8000) pinDistance = 8000;
+    return {
+      mode: mode,
+      label: SCROLL_ANIMATION_MODES[mode],
+      start: String(raw.scrollStart || "top 80%"),
+      end: String(raw.scrollEnd || (mode === "pin-sequence" ? "+=" + pinDistance : "bottom 20%")),
+      scrub: round(scrub, 2),
+      pinDistance: Math.round(pinDistance)
+    };
+  }
+
+  function normalizeScrollAnimationMode(value) {
+    var raw = String(value || "enter-once").toLowerCase().replace(/[_\s]+/g, "-");
+    if (SCROLL_ANIMATION_MODES[raw]) return raw;
+    Object.keys(SCROLL_ANIMATION_MODES).forEach(function (key) {
+      if (SCROLL_ANIMATION_MODES[key].toLowerCase().replace(/\s+/g, "-") === raw) raw = key;
+    });
+    return SCROLL_ANIMATION_MODES[raw] ? raw : "enter-once";
+  }
+
+  function normalizeAssetRenames(raw) {
+    var result = {};
+    if (!raw || typeof raw !== "object") return result;
+    Object.keys(raw).forEach(function (key) {
+      var cleanKey = baseAssetFilename(key);
+      var value = baseAssetFilename(raw[key]);
+      if (cleanKey && value) result[cleanKey] = value;
+    });
+    return result;
   }
 
   async function serializeNode(node, parentModel, root, ctx, depth, path) {
@@ -903,6 +966,12 @@
   async function maybeExportNodeAsset(node, model, ctx) {
     if (ctx.assets.length >= MAX_ASSETS) return detectAssetReference(node, model, ctx);
 
+    if (shouldForceSvgExport(node, model)) {
+      var forcedSvg = await maybeExportSvgAsset(node, model, ctx, "forced-svg:" + model.figmaId, "forced-svg");
+      if (forcedSvg) return forcedSvg;
+      ctx.warnings.push(warning("forced-svg-fallback", "Layer '" + model.name + "' requested SVG export by name, but SVG export was not available. Motion will try the normal image/vector export path.", model.figmaId));
+    }
+
     var imageHash = firstImageHash(node);
     if (imageHash) {
       var imageKey = "image:" + imageHash;
@@ -920,7 +989,8 @@
           return null;
         }
         var ext = detectImageExtension(bytes);
-        var imageFilename = (ctx.assetFilePrefix || ctx.sectionType) + "-" + slug(model.name, "image") + "-" + cleanNodeId(model.figmaId) + "-" + shortHash(imageHash) + "." + ext;
+        var defaultImageFilename = normalizeDefaultAssetFilename((ctx.assetFilePrefix || ctx.sectionType) + "-" + slug(model.name, "image") + "-" + cleanNodeId(model.figmaId) + "-" + shortHash(imageHash) + "." + ext, ext);
+        var imageFilename = resolveAssetFilename(ctx, defaultImageFilename, ext);
         var asset = {
           path: "assets/" + imageFilename,
           name: model.name,
@@ -935,7 +1005,7 @@
           kind: "image",
           mime: asset.mime
         };
-        var manifestEntry = recordAssetSuccess(ctx, model, reference.filename, ext.toUpperCase(), "image-fill");
+        var manifestEntry = recordAssetSuccess(ctx, model, reference.filename, ext.toUpperCase(), "image-fill", defaultImageFilename);
         ctx.assetHashMap[imageHash] = reference;
         ctx.assetKeyMap[imageKey] = {
           reference: reference,
@@ -950,45 +1020,55 @@
     }
 
     if (VECTOR_TYPES[node.type]) {
-      var vectorKey = "vector:" + model.figmaId;
-      if (ctx.assetKeyMap[vectorKey]) {
-        addAssetUse(ctx.assetKeyMap[vectorKey].manifestEntry, model.figmaId);
-        return ctx.assetKeyMap[vectorKey].reference;
-      }
-      try {
-        var svg = await node.exportAsync({ format: "SVG_STRING" });
-        var svgFilename = (ctx.assetFilePrefix || ctx.sectionType) + "-" + slug(model.name, "icon") + "-" + cleanNodeId(model.figmaId) + ".svg";
-        var svgAsset = {
-          path: "assets/" + svgFilename,
-          name: model.name,
-          type: "text",
-          content: svg
-        };
-        ctx.assets.push(svgAsset);
-        var svgReference = {
-          path: svgAsset.path,
-          filename: svgAsset.path.split("/").pop(),
-          kind: "svg"
-        };
-        ctx.assetKeyMap[vectorKey] = {
-          reference: svgReference,
-          manifestEntry: recordAssetSuccess(ctx, model, svgReference.filename, "SVG", "vector")
-        };
-        return svgReference;
-      } catch (error2) {
-        ctx.warnings.push(warning("svg-export-failed", "Could not export vector asset on '" + model.name + "': " + error2.message, model.figmaId));
-        recordAssetFailure(ctx, model, "vector", error2.message);
-      }
+      var svgReference = await maybeExportSvgAsset(node, model, ctx, "vector:" + model.figmaId, "vector");
+      if (svgReference) return svgReference;
     }
 
     return null;
   }
 
-  function recordAssetSuccess(ctx, model, filename, assetType, sourceType) {
+  async function maybeExportSvgAsset(node, model, ctx, assetKey, sourceType) {
+    if (ctx.assetKeyMap[assetKey]) {
+      addAssetUse(ctx.assetKeyMap[assetKey].manifestEntry, model.figmaId);
+      return ctx.assetKeyMap[assetKey].reference;
+    }
+    try {
+      if (!("exportAsync" in node)) throw new Error("Layer does not support SVG export.");
+      var svg = await node.exportAsync({ format: "SVG_STRING" });
+      if (typeof svg !== "string") throw new Error("Figma did not return SVG text for this layer.");
+      var defaultSvgFilename = normalizeDefaultAssetFilename((ctx.assetFilePrefix || ctx.sectionType) + "-" + slug(model.name, "icon") + "-" + cleanNodeId(model.figmaId) + ".svg", "svg");
+      var svgFilename = resolveAssetFilename(ctx, defaultSvgFilename, "svg");
+      var svgAsset = {
+        path: "assets/" + svgFilename,
+        name: model.name,
+        type: "text",
+        content: svg
+      };
+      ctx.assets.push(svgAsset);
+      var svgReference = {
+        path: svgAsset.path,
+        filename: svgAsset.path.split("/").pop(),
+        kind: "svg"
+      };
+      ctx.assetKeyMap[assetKey] = {
+        reference: svgReference,
+        manifestEntry: recordAssetSuccess(ctx, model, svgReference.filename, "SVG", sourceType, defaultSvgFilename)
+      };
+      return svgReference;
+    } catch (error) {
+      ctx.warnings.push(warning("svg-export-failed", "Could not export SVG asset on '" + model.name + "': " + error.message, model.figmaId));
+      recordAssetFailure(ctx, model, sourceType, error.message);
+      return null;
+    }
+  }
+
+  function recordAssetSuccess(ctx, model, filename, assetType, sourceType, defaultFilename) {
     var entry = {
       figmaNodeId: model.figmaId,
       originalLayerName: model.name,
+      defaultFilename: defaultFilename || filename,
       shopifyFilename: filename,
+      renamed: Boolean(defaultFilename && defaultFilename !== filename),
       assetType: assetType,
       sourceType: sourceType,
       dimensions: {
@@ -1027,8 +1107,18 @@
 
   function detectAssetReference(node, model, ctx) {
     var imageHash = firstImageHash(node);
+    if (shouldForceSvgExport(node, model)) {
+      var forcedSvgFilename = normalizeDefaultAssetFilename((ctx.assetFilePrefix || ctx.sectionType) + "-" + slug(model.name, "icon") + "-" + cleanNodeId(model.figmaId) + ".svg", "svg");
+      forcedSvgFilename = resolveAssetFilename(ctx, forcedSvgFilename, "svg");
+      return {
+        path: "assets/" + forcedSvgFilename,
+        filename: forcedSvgFilename,
+        kind: "svg-placeholder"
+      };
+    }
     if (imageHash) {
-      var imageFilename = (ctx.assetFilePrefix || ctx.sectionType) + "-" + slug(model.name, "image") + "-" + cleanNodeId(model.figmaId) + "-" + shortHash(imageHash) + ".png";
+      var imageFilename = normalizeDefaultAssetFilename((ctx.assetFilePrefix || ctx.sectionType) + "-" + slug(model.name, "image") + "-" + cleanNodeId(model.figmaId) + "-" + shortHash(imageHash) + ".png", "png");
+      imageFilename = resolveAssetFilename(ctx, imageFilename, "png");
       return {
         path: "assets/" + imageFilename,
         filename: imageFilename,
@@ -1036,7 +1126,8 @@
       };
     }
     if (VECTOR_TYPES[node.type]) {
-      var svgFilename = (ctx.assetFilePrefix || ctx.sectionType) + "-" + slug(model.name, "icon") + "-" + cleanNodeId(model.figmaId) + ".svg";
+      var svgFilename = normalizeDefaultAssetFilename((ctx.assetFilePrefix || ctx.sectionType) + "-" + slug(model.name, "icon") + "-" + cleanNodeId(model.figmaId) + ".svg", "svg");
+      svgFilename = resolveAssetFilename(ctx, svgFilename, "svg");
       return {
         path: "assets/" + svgFilename,
         filename: svgFilename,
@@ -1236,6 +1327,7 @@
 
   function renderViewport(viewport, input) {
     var motionJson = JSON.stringify(viewport.motion).replace(/</g, "\\u003c");
+    var scrollAnimation = viewport.motion && viewport.motion.scrollAnimation ? viewport.motion.scrollAnimation : input.settings.scrollAnimation;
     var overlays = collectOverlayDestinations(viewport.states, viewport.destinations, viewport.motion);
     var stateMarkup = viewport.states.map(function (state) {
       return renderState(state, input, viewport.stage, overlays);
@@ -1244,7 +1336,7 @@
       return renderOverlay(overlay, input.classPrefix);
     }).join("\n");
     var lines = [];
-    lines.push("  <div class=\"fts-responsive fts-responsive--" + escapeAttr(viewport.key) + "\" data-motion-figma-prototype-to-shopify data-fts-viewport=\"" + escapeAttr(viewport.key) + "\">");
+    lines.push("  <div class=\"fts-responsive fts-responsive--" + escapeAttr(viewport.key) + "\" data-motion-figma-prototype-to-shopify data-fts-viewport=\"" + escapeAttr(viewport.key) + "\" data-fts-scroll-mode=\"" + escapeAttr(scrollAnimation.mode) + "\" style=\"--fts-pin-distance: " + numberOrZero(scrollAnimation.pinDistance) + "px;\">");
     lines.push("    <div class=\"fts-stage\" data-fts-stage style=\"--stage-width: " + numberOrZero(viewport.stage.width) + "; --stage-height: " + numberOrZero(viewport.stage.height) + ";\">");
     lines.push(stateMarkup);
     lines.push("    </div>");
@@ -1484,6 +1576,8 @@
     lines.push("  font-weight: var(--font-heading-weight, var(--font-body-weight, inherit));");
     lines.push("}");
     lines.push("." + classPrefix + " .fts-responsive { width: 100%; }");
+    lines.push("." + classPrefix + " .fts-responsive[data-fts-scroll-mode=\"pin-sequence\"].is-fts-pinned-fallback { min-height: max(var(--fts-pin-distance, 1600px), 100vh); }");
+    lines.push("." + classPrefix + " .fts-responsive[data-fts-scroll-mode=\"pin-sequence\"].is-fts-pinned-fallback .fts-stage { position: sticky; top: 0; }");
     if (hasViewport(viewports, "desktop") && hasViewport(viewports, "mobile")) {
       lines.push("." + classPrefix + " .fts-responsive--desktop { display: block; }");
       lines.push("." + classPrefix + " .fts-responsive--mobile { display: none; }");
@@ -1646,11 +1740,14 @@
       "    var timers = [];",
       "    var stateTimers = [];",
       "    var afterTimeoutInteractions = [];",
+      "    var scrollTriggers = [];",
       "    var tweens = [];",
       "    var originals = new Map();",
       "    var activePreparedLayers = [];",
       "    var activeMutedLayers = [];",
       "    var transitionTimer = null;",
+      "    var scrollAnimation = normalizeScrollAnimation(config.scrollAnimation);",
+      "    var sequenceStarted = false;",
       "    ensureActiveState();",
       "    function find(id) { return root.querySelector('[data-fts-node=\"' + cssEscape(id) + '\"]'); }",
       "    function findStateByFigmaId(id) { return root.querySelector('[data-figma-node-id=\"' + cssEscape(id) + '\"].fts-variant, .fts-variant[data-figma-node-id=\"' + cssEscape(id) + '\"]'); }",
@@ -1660,7 +1757,7 @@
       "    function ensureActiveState() {",
       "      var active = activeState();",
       "      var first = root.querySelector('.fts-variant');",
-      "      if (!active && first) activateOnly(first);",
+      "      if (!active && first) activateOnly(first, true);",
       "      else if (active) setStateActive(active, true);",
       "    }",
       "    function setStateActive(state, active) {",
@@ -1668,10 +1765,10 @@
       "      state.classList.toggle('is-active', active);",
       "      state.setAttribute('aria-hidden', active ? 'false' : 'true');",
       "    }",
-      "    function activateOnly(state) {",
+      "    function activateOnly(state, holdTimers) {",
       "      killTweens();",
       "      root.querySelectorAll('.fts-variant').forEach(function (item) { setStateActive(item, item === state); item.style.opacity = ''; item.style.visibility = ''; item.style.transition = ''; item.style.pointerEvents = ''; });",
-      "      scheduleAfterTimeoutsForState(state, 0);",
+      "      if (!holdTimers) scheduleAfterTimeoutsForState(state, 0);",
       "    }",
       "    function clearStateTimers() {",
       "      stateTimers.forEach(function (id) { window.clearTimeout(id); });",
@@ -1683,16 +1780,28 @@
       "    }",
       "    function scheduleAfterTimeoutsForState(state, waitMs) {",
       "      clearStateTimers();",
-      "      if (!state) return;",
+      "      if (!state) return 0;",
       "      var stateId = state.getAttribute('data-fts-state');",
+      "      var scheduled = 0;",
       "      afterTimeoutInteractions.forEach(function (interaction) {",
       "        if (interaction.sourceStateId && interaction.sourceStateId !== stateId) return;",
       "        var id = window.setTimeout(function () { runInteraction(interaction, false); }, Math.max(0, Number(waitMs || 0)) + Math.max(0, Number(interaction.delayMs || 0)));",
       "        stateTimers.push(id);",
       "        timers.push(id);",
+      "        scheduled += 1;",
       "      });",
+      "      if (!scheduled && scrollAnimation.mode === 'infinite-loop') scheduleLoopFallbackForState(state, waitMs);",
+      "      return scheduled;",
       "    }",
       "    function canUseGsap() { return window.gsap && typeof window.gsap.to === 'function' && typeof window.gsap.set === 'function'; }",
+      "    function getScrollTrigger() {",
+      "      var gsap = window.gsap;",
+      "      var ScrollTrigger = window.ScrollTrigger || (gsap && gsap.ScrollTrigger);",
+      "      if (!gsap || !ScrollTrigger || typeof ScrollTrigger.create !== 'function') return null;",
+      "      if (typeof gsap.registerPlugin === 'function') { try { gsap.registerPlugin(ScrollTrigger); } catch (error) {} }",
+      "      return ScrollTrigger;",
+      "    }",
+      "    function trackScrollTrigger(trigger) { if (trigger && typeof trigger.kill === 'function') scrollTriggers.push(trigger); return trigger; }",
       "    function trackTween(tween) { if (tween && typeof tween.kill === 'function') tweens.push(tween); return tween; }",
       "    function killTweens() {",
       "      while (tweens.length) {",
@@ -1920,6 +2029,140 @@
       "      transitionTimer = window.setTimeout(function () { transitionTimer = null; finishStateChange(); }, duration);",
       "      timers.push(transitionTimer);",
       "    }",
+      "    function normalizeScrollAnimation(value) {",
+      "      var raw = value || {};",
+      "      var mode = String(raw.mode || 'enter-once').toLowerCase();",
+      "      if (['enter-once', 'enter-replay', 'infinite-loop', 'scroll-scrub', 'pin-sequence'].indexOf(mode) === -1) mode = 'enter-once';",
+      "      return {",
+      "        mode: mode,",
+      "        start: raw.start || 'top 80%',",
+      "        end: raw.end || (mode === 'pin-sequence' ? '+=' + (raw.pinDistance || 1600) : 'bottom 20%'),",
+      "        scrub: Math.max(0, Number(raw.scrub || 1)),",
+      "        pinDistance: Math.max(400, Number(raw.pinDistance || 1600))",
+      "      };",
+      "    }",
+      "    function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }",
+      "    function stateList() { return Array.prototype.slice.call(root.querySelectorAll('.fts-variant')); }",
+      "    function orderedStates() {",
+      "      var all = stateList();",
+      "      if (!config.stateOrder || !config.stateOrder.length) return all;",
+      "      var ordered = [];",
+      "      config.stateOrder.forEach(function (item) {",
+      "        var state = findStateByCleanId(item.id) || findStateByFigmaId(item.figmaNodeId);",
+      "        if (state && ordered.indexOf(state) === -1) ordered.push(state);",
+      "      });",
+      "      all.forEach(function (state) { if (ordered.indexOf(state) === -1) ordered.push(state); });",
+      "      return ordered;",
+      "    }",
+      "    function getStartState() { return findStateByCleanId(config.startStateId) || findStateByFigmaId(config.startStateFigmaId) || stateList()[0]; }",
+      "    function stateFigmaId(state) { return state && state.getAttribute('data-figma-node-id'); }",
+      "    function scheduleLoopFallbackForState(state, waitMs) {",
+      "      var states = orderedStates();",
+      "      if (!state || states.length < 2) return;",
+      "      var index = states.indexOf(state);",
+      "      if (index === -1) index = 0;",
+      "      var next = states[(index + 1) % states.length];",
+      "      var id = window.setTimeout(function () {",
+      "        if (scrollAnimation.mode !== 'infinite-loop') return;",
+      "        changeVariant(stateFigmaId(activeState() || state), stateFigmaId(next), { durationMs: 900, cssEase: 'ease' }, [], false);",
+      "      }, Math.max(0, Number(waitMs || 0)) + 900);",
+      "      stateTimers.push(id);",
+      "      timers.push(id);",
+      "    }",
+      "    function startSequence(replay) {",
+      "      if (scrollAnimation.mode === 'enter-once' && sequenceStarted && !replay) return;",
+      "      sequenceStarted = true;",
+      "      if (replay) { activateOnly(getStartState(), false); return; }",
+      "      scheduleAfterTimeoutsForState(activeState() || getStartState(), 0);",
+      "    }",
+      "    function stopSequence(reset) {",
+      "      clearStateTimers();",
+      "      clearTransitionTimer();",
+      "      if (reset) activateOnly(getStartState(), true);",
+      "    }",
+      "    function setupScrollAnimation() {",
+      "      root.setAttribute('data-fts-scroll-mode', scrollAnimation.mode);",
+      "      if (scrollAnimation.mode === 'scroll-scrub' || scrollAnimation.mode === 'pin-sequence') {",
+      "        setupScrollProgressAnimation(scrollAnimation.mode === 'pin-sequence');",
+      "        return;",
+      "      }",
+      "      setupEnterAnimation();",
+      "    }",
+      "    function setupEnterAnimation() {",
+      "      var mode = scrollAnimation.mode;",
+      "      var ScrollTrigger = getScrollTrigger();",
+      "      if (ScrollTrigger) {",
+      "        trackScrollTrigger(ScrollTrigger.create({",
+      "          trigger: root,",
+      "          start: scrollAnimation.start,",
+      "          end: scrollAnimation.end,",
+      "          once: mode === 'enter-once',",
+      "          onEnter: function () { startSequence(mode === 'enter-replay'); },",
+      "          onEnterBack: function () { if (mode === 'enter-replay') startSequence(true); },",
+      "          onLeave: function () { if (mode === 'enter-replay') stopSequence(false); },",
+      "          onLeaveBack: function () { if (mode === 'enter-replay') stopSequence(true); }",
+      "        }));",
+      "        return;",
+      "      }",
+      "      if ('IntersectionObserver' in window) {",
+      "        var observer = new IntersectionObserver(function (entries) {",
+      "          entries.forEach(function (entry) {",
+      "            if (entry.isIntersecting) startSequence(mode === 'enter-replay');",
+      "            else if (mode === 'enter-replay') stopSequence(false);",
+      "          });",
+      "        }, { threshold: 0.25 });",
+      "        observer.observe(root);",
+      "        cleanup.push(function () { observer.disconnect(); });",
+      "        return;",
+      "      }",
+      "      startSequence(false);",
+      "    }",
+      "    function setupScrollProgressAnimation(pin) {",
+      "      stopSequence(false);",
+      "      var ScrollTrigger = getScrollTrigger();",
+      "      if (ScrollTrigger) {",
+      "        trackScrollTrigger(ScrollTrigger.create({",
+      "          trigger: root,",
+      "          start: pin ? 'top top' : scrollAnimation.start,",
+      "          end: pin ? scrollAnimation.end : scrollAnimation.end,",
+      "          scrub: scrollAnimation.scrub || true,",
+      "          pin: pin ? root : false,",
+      "          onUpdate: function (self) { applyScrollProgress(self.progress); }",
+      "        }));",
+      "        return;",
+      "      }",
+      "      setupFallbackScrollDriver(pin);",
+      "    }",
+      "    function setupFallbackScrollDriver(pin) {",
+      "      if (pin) root.classList.add('is-fts-pinned-fallback');",
+      "      var ticking = false;",
+      "      function requestUpdate() {",
+      "        if (ticking) return;",
+      "        ticking = true;",
+      "        window.requestAnimationFrame(function () { ticking = false; applyScrollProgress(progressForRoot(pin)); });",
+      "      }",
+      "      add(window, 'scroll', requestUpdate);",
+      "      add(window, 'resize', requestUpdate);",
+      "      requestUpdate();",
+      "      cleanup.push(function () { root.classList.remove('is-fts-pinned-fallback'); });",
+      "    }",
+      "    function progressForRoot(pin) {",
+      "      var rect = root.getBoundingClientRect();",
+      "      var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 1;",
+      "      if (pin) {",
+      "        var travel = Math.max(1, rect.height - viewportHeight);",
+      "        return clamp(-rect.top / travel, 0, 1);",
+      "      }",
+      "      return clamp((viewportHeight - rect.top) / (viewportHeight + Math.max(1, rect.height)), 0, 1);",
+      "    }",
+      "    function applyScrollProgress(progress) {",
+      "      clearStateTimers();",
+      "      var states = orderedStates();",
+      "      if (!states.length) return;",
+      "      var index = Math.round(clamp(progress, 0, 1) * (states.length - 1));",
+      "      var target = states[index];",
+      "      if (target && target !== activeState()) activateOnly(target, true);",
+      "    }",
       "    function openOverlay(id) {",
       "      var overlay = root.querySelector('[data-fts-overlay=\"' + cssEscape(id) + '\"]');",
       "      if (!overlay) return;",
@@ -1980,8 +2223,8 @@
       "    }",
       "    root.querySelectorAll('[data-fts-overlay-close]').forEach(function (el) { add(el, 'click', closeOverlay); });",
       "    (config.interactions || []).forEach(bind);",
-      "    scheduleAfterTimeoutsForState(activeState(), 0);",
-      "    root[STATE_KEY] = { destroy: function () { cleanup.forEach(function (fn) { fn(); }); stateTimers.forEach(function (id) { window.clearTimeout(id); }); timers.forEach(function (id) { window.clearTimeout(id); }); killTweens(); root[STATE_KEY] = null; } };",
+      "    setupScrollAnimation();",
+      "    root[STATE_KEY] = { destroy: function () { cleanup.forEach(function (fn) { fn(); }); scrollTriggers.forEach(function (trigger) { if (trigger && typeof trigger.kill === 'function') trigger.kill(); }); stateTimers.forEach(function (id) { window.clearTimeout(id); }); timers.forEach(function (id) { window.clearTimeout(id); }); killTweens(); root[STATE_KEY] = null; } };",
       "  }",
       "  function cssEscape(value) {",
       "    if (window.CSS && CSS.escape) return CSS.escape(value);",
@@ -2058,6 +2301,7 @@
       },
       selection: input.selection,
       responsive: input.responsive || [],
+      scrollAnimation: input.settings.scrollAnimation,
       stage: input.stage,
       states: input.states.map(stateSummary),
       files: [
@@ -2078,6 +2322,7 @@
           ? "Paste sections/" + input.sectionType + ".liquid into your Shopify theme sections folder or Shopify code editor, then upload the generated CSS and JavaScript assets."
           : "Use Copy Code or paste sections/" + input.sectionType + ".liquid into your Shopify theme sections folder. The generated CSS and JavaScript are already inside this section file.",
         "Upload every referenced generated image/SVG asset from the assets folder into Shopify theme assets.",
+        "If assets were renamed in the plugin, use the `shopifyFilename` values from the manifest and report.",
         "Create a page template from templates/page." + input.sectionType + ".json or add the section from the theme editor.",
         "Choose product, collection, and menu settings in the theme editor when the section uses them.",
         "Preview desktop and mobile, then verify click, hover, delay, and overlay interactions."
@@ -2092,6 +2337,7 @@
       generatedAt: new Date().toISOString(),
       sectionType: input.sectionType,
       codeMode: input.settings.codeMode,
+      scrollAnimation: input.settings.scrollAnimation,
       selection: input.selection,
       responsive: input.responsive || [],
       stage: input.stage,
@@ -2127,6 +2373,7 @@
     lines.push("- Width: `" + input.stage.width + "`");
     lines.push("- Height: `" + input.stage.height + "`");
     lines.push("- Initial state: `" + input.stage.startStateName + "` (`" + input.stage.startStateFigmaId + "`)");
+    lines.push("- Scroll animation: `" + input.settings.scrollAnimation.label + "` (`" + input.settings.scrollAnimation.mode + "`)");
     lines.push("");
     lines.push("## States");
     lines.push("");
@@ -2138,7 +2385,7 @@
     lines.push("");
     if (input.assetManifest.length) {
       input.assetManifest.forEach(function (asset) {
-        lines.push("- `" + (asset.shopifyFilename || "not exported") + "`: " + asset.status + " from `" + asset.originalLayerName + "` (" + asset.figmaNodeId + ")" + (asset.failureReason ? " - " + asset.failureReason : ""));
+        lines.push("- `" + (asset.shopifyFilename || "not exported") + "`" + (asset.renamed ? " (renamed from `" + asset.defaultFilename + "`)" : "") + ": " + asset.status + " from `" + asset.originalLayerName + "` (" + asset.figmaNodeId + ")" + (asset.failureReason ? " - " + asset.failureReason : ""));
       });
     } else {
       lines.push("- No exported image or SVG assets.");
@@ -2220,9 +2467,19 @@
         ? "This export is in external code mode, so the Liquid section loads CSS and JavaScript with Shopify `asset_url` and does not inline the same runtime."
         : "This export is in Copy Code mode, so the Liquid section includes generated CSS in `{% stylesheet %}` and generated JavaScript in a regular `<script>` tag. The separate CSS/JS files in the ZIP are optional developer copies and are not loaded by the section.",
       "",
+      "## Scroll animation",
+      "",
+      "Selected mode: `" + input.settings.scrollAnimation.label + "` (`" + input.settings.scrollAnimation.mode + "`).",
+      "",
+      "Available modes are Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, and Pin Sequence. ScrollTrigger is used when the Shopify theme already loads GSAP + ScrollTrigger; otherwise this export uses a no-dependency browser fallback.",
+      "",
       "## Shopify theme typography",
       "",
       "Generated text inherits Shopify theme font variables such as `--font-body-family`, `--font-body-style`, `--font-body-weight`, `--font-heading-family`, `--font-heading-style`, and `--font-heading-weight`. Motion preserves Figma text sizing with Shopify's `--font-body-scale` when the theme provides it.",
+      "",
+      "## Asset filenames",
+      "",
+      input.assetManifest.length ? input.assetManifest.filter(function (asset) { return asset.status === "exported"; }).map(function (asset) { return "- `" + asset.shopifyFilename + "`" + (asset.renamed ? " (renamed from `" + asset.defaultFilename + "`)" : ""); }).join("\n") : "- No exported image/SVG assets.",
       "",
       "## Exported states",
       "",
@@ -2588,6 +2845,72 @@
   function slug(value, fallback) {
     var out = String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
     return out || fallback;
+  }
+
+  function baseAssetFilename(value) {
+    return String(value || "").trim().replace(/\\/g, "/").split("/").pop().replace(/[?#].*$/, "");
+  }
+
+  function stripAssetExtension(filename) {
+    return baseAssetFilename(filename).replace(/\.[a-z0-9]+$/i, "");
+  }
+
+  function sanitizeAssetFilename(value, requiredExt, fallback) {
+    var ext = String(requiredExt || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    var raw = baseAssetFilename(value || fallback);
+    var stem = stripAssetExtension(raw);
+    return slug(stem, stripAssetExtension(fallback) || "asset") + (ext ? "." + ext : "");
+  }
+
+  function normalizeDefaultAssetFilename(defaultFilename, requiredExt) {
+    return sanitizeAssetFilename(defaultFilename, requiredExt, defaultFilename);
+  }
+
+  function reserveAssetFilename(ctx, filename) {
+    var base = stripAssetExtension(filename);
+    var extMatch = baseAssetFilename(filename).match(/\.([a-z0-9]+)$/i);
+    var ext = extMatch ? "." + extMatch[1].toLowerCase() : "";
+    var candidate = slug(base, "asset") + ext;
+    var key = candidate.toLowerCase();
+    var index = 2;
+    while (ctx.assetFilenameMap && ctx.assetFilenameMap[key]) {
+      candidate = slug(base, "asset") + "-" + index + ext;
+      key = candidate.toLowerCase();
+      index += 1;
+    }
+    if (ctx.assetFilenameMap) ctx.assetFilenameMap[key] = true;
+    return candidate;
+  }
+
+  function resolveAssetFilename(ctx, defaultFilename, requiredExt) {
+    var baseDefault = baseAssetFilename(defaultFilename);
+    var requested = ctx.settings && ctx.settings.assetRenames
+      ? ctx.settings.assetRenames[baseDefault] || ctx.settings.assetRenames[stripAssetExtension(baseDefault)]
+      : "";
+    var filename = sanitizeAssetFilename(requested || baseDefault, requiredExt, baseDefault);
+    return reserveAssetFilename(ctx, filename);
+  }
+
+  function shouldForceSvgExport(node, model) {
+    var name = String(model && model.name || node && node.name || "");
+    return /\.svg$/i.test(name)
+      || /(?:^|[\s._#\[(])svg(?:$|[\s._\])>-])/i.test(name)
+      || /(?:export|format)\s*[:=]\s*svg/i.test(name);
+  }
+
+  function assetSummary(asset) {
+    return {
+      figmaNodeId: asset.figmaNodeId,
+      originalLayerName: asset.originalLayerName,
+      defaultFilename: asset.defaultFilename || asset.shopifyFilename,
+      shopifyFilename: asset.shopifyFilename,
+      renamed: Boolean(asset.renamed),
+      assetType: asset.assetType,
+      sourceType: asset.sourceType,
+      status: asset.status,
+      failureReason: asset.failureReason || null,
+      usedBy: asset.usedBy || []
+    };
   }
 
   function assetFilePrefix(settings, viewport) {

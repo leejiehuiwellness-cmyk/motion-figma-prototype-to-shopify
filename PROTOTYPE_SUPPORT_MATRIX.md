@@ -23,6 +23,7 @@ Primary references:
 | Smart Animate | Matching layer animation between frames, components, instances, or variants | Converted by comparing matching layer names and hierarchy, then animating destination layers from source geometry to final geometry |
 | Overlay | Floating destination above current frame | Exported as hidden overlay markup with JS open/close |
 | Overflow / scrolling | Prototype viewport scroll behavior | Reported in v1; not compiled as scroll-linked Shopify behavior |
+| Scroll animation behavior | How the exported section starts, repeats, scrubs, or pins while scrolling | User-configured in the plugin and included in Shopify Liquid motion JSON |
 | Device preview | Prototype presentation shell | Not relevant to Shopify export |
 
 The export report includes a `prototypeReactions` array with the raw interaction data found on the selected Figma hierarchy. This keeps the full prototype interaction spec available even when a feature is not compiled to storefront JavaScript in v1.
@@ -82,6 +83,28 @@ The export report includes a `prototypeReactions` array with the raw interaction
 | Masks and complex blend modes | Report only | Static render or manual follow-up |
 | Video/audio playback action | Report only | Future media runtime |
 
+## Scroll Animation Modes
+
+| Plugin mode | V1 status | Shopify runtime behavior |
+| --- | --- | --- |
+| Enter Once | Supported | Starts the Figma prototype/variant sequence when the section enters the viewport; plays once |
+| Enter Replay | Supported | Replays the sequence each time the section re-enters the viewport |
+| Infinite Loop | Supported | Starts on enter and keeps looping through timed prototype states; if a sequence has no final timeout, Motion loops to the next state |
+| Scroll Scrub | Supported | Maps scroll progress to the selected frame/component/component-set state order |
+| Pin Sequence | Supported | Pins the section while scroll progress scrubs through the state order; uses GSAP ScrollTrigger when available and a sticky fallback otherwise |
+
+## Asset Naming
+
+| Layer naming format | V1 behavior |
+| --- | --- |
+| Vector layer | Exports as SVG automatically |
+| `logo.svg` | Attempts SVG export for that layer |
+| `Logo [svg]` | Attempts SVG export for that layer |
+| `Logo #svg` | Attempts SVG export for that layer |
+| `Logo export=svg` | Attempts SVG export for that layer |
+
+Renamed assets are stored in the export manifest with both `defaultFilename` and `shopifyFilename`. After users click Save and Run, Copy Code, Copy CSS, Copy JS, ZIP files, manifest, and report are regenerated from the renamed `shopifyFilename` values.
+
 ## Design Rules for Reliable Export
 
 1. Use one clean top-level frame, component, instance, or variant for the Shopify section.
@@ -89,5 +112,6 @@ The export report includes a `prototypeReactions` array with the raw interaction
 3. Keep source and destination layer names consistent for Smart Animate. Motion matches by path, layer name, structure, and type so the Shopify playback can move the destination layer smoothly instead of flashing through state screenshots.
 4. Use Auto Layout when possible.
 5. Use layer names for Liquid binding.
-6. Avoid relying on prototype-only variables or conditionals in v1.
-7. For Shopify product and collection data, name layers explicitly instead of using visual labels only.
+6. Choose the scroll animation mode before copying Shopify code.
+7. Avoid relying on prototype-only variables or conditionals in v1.
+8. For Shopify product and collection data, name layers explicitly instead of using visual labels only.

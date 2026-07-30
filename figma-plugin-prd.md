@@ -81,6 +81,8 @@ Motion: Figma Prototype to Shopify
 
 ### 4.2 V1 Out of Scope
 
+Implementation update: scroll-based section playback is now in scope for the generated Shopify runtime. Supported modes are Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, and Pin Sequence.
+
 - ä¸ç›´æŽ¥ç™»å½•æˆ–å‘å¸ƒåˆ° Shopify storeã€‚
 - ä¸åšå®Œæ•´æ•´ç«™ä¸€é”®è½¬æ¢ã€‚
 - ä¸æ”¯æŒ checkout é¡µé¢è‡ªå®šä¹‰ã€‚
@@ -230,6 +232,8 @@ The plugin must:
 - Export vector/icon nodes as SVG when the node is suitable.
 - Export bitmap/image-fill nodes as PNG or JPG.
 - Name assets with sanitized, deterministic names.
+- Allow users to rename exported image/SVG assets and regenerate Copy Code, Copy CSS, Copy JS, ZIP, manifest, and report from the renamed Shopify filenames.
+- Force SVG export for layers named with formats such as `logo.svg`, `Logo [svg]`, `Logo #svg`, or `Logo export=svg` when Figma can export that layer as SVG.
 - Deduplicate identical assets where possible.
 - Preserve alt text candidates from layer names.
 - Generate asset references using Shopify Liquid asset filters.
@@ -554,6 +558,8 @@ type ShopifyExportModel = {
 - Given a layer named `product.price`, when exported, then the generated Liquid renders a money-formatted product price.
 - Given a product card group under `collection.grid`, when exported, then the generated Liquid loops through collection products.
 - Given a click reaction from one frame state to another with Smart Animate position/opacity changes, when exported, then the Shopify section animates between those states.
+- Given a selected scroll animation mode, when exported, then the generated Liquid motion JSON and runtime include Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, or Pin Sequence behavior.
+- Given a renamed exported asset, when the user clicks Save and Run, then Copy Code, Copy CSS, Copy JS, ZIP, manifest, and report all use the saved Shopify asset filename.
 - Given an unsupported drag interaction, when exported, then the plugin does not crash and the report lists the unsupported interaction.
 - Given reduced motion enabled in the browser, when the section loads, then non-essential motion is skipped or duration is reduced to zero.
 

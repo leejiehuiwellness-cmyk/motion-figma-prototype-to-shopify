@@ -144,14 +144,14 @@ motion-figma-prototype-to-shopify-report.json</code></pre>
             <span class="step-number">5</span>
             <div>
               <h3>保留设计师做的 prototype motion</h3>
-              <p>在 Figma Prototype 面板里设置 click、hover、after delay、open overlay、change to、navigate、Smart Animate。Motion 会读取 Figma reaction，并把支持的部分编译到 CSS/JavaScript。</p>
+              <p>在 Figma Prototype 面板里设置 click、hover、after delay、open overlay、change to、navigate、Smart Animate。然后选择 Animation mode：Enter Once、Enter Replay、Infinite Loop、Scroll Scrub 或 Pin Sequence。Motion 会读取 Figma reaction，并把支持的部分编译到 CSS/JavaScript。</p>
             </div>
           </li>
           <li>
             <span class="step-number">6</span>
             <div>
               <h3>生成 Shopify Liquid export</h3>
-              <p>运行 Motion，点击 Generate export。Copy Code 会把 desktop 与 mobile frame 合并成同一个 Shopify section，用 CSS breakpoint 切换，同时复用重复的 image/SVG assets。你也可以 Download ZIP 获取 section、optional CSS/JS developer copies、assets、manifest、template JSON 和 conversion report。</p>
+              <p>运行 Motion，点击 Generate export。可在 Assets tab 改名 image/SVG 文件，再点 Save and Run；Copy Code、Copy CSS、Copy JS、ZIP、manifest 和 report 会一起更新。Copy Code 会把 desktop 与 mobile frame 合并成同一个 Shopify section，用 CSS breakpoint 切换，同时复用重复的 image/SVG assets。</p>
             </div>
           </li>
           <li>
@@ -277,6 +277,14 @@ motion-figma-prototype-to-shopify-report.json</code></pre>
           <article>
             <h3>Smart Animate diffs</h3>
             <p>Matched destination layers start from source geometry, then move/scale/rotate/fade into the final Shopify state for smoother Figma Play-style motion.</p>
+          </article>
+          <article>
+            <h3>Scroll modes</h3>
+            <p>Enter Once、Enter Replay、Infinite Loop、Scroll Scrub、Pin Sequence。GSAP ScrollTrigger 可用时会使用它；否则使用 browser fallback。</p>
+          </article>
+          <article>
+            <h3>Asset filenames</h3>
+            <p>Assets tab 支持改名后 Save and Run。SVG layer format：logo.svg、Logo [svg]、Logo #svg、Logo export=svg。</p>
           </article>
         </div>
       </section>

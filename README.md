@@ -11,7 +11,7 @@ The first version focuses on a practical same-day workflow:
 - Select one finished Figma frame, component, instance, component variant, or a layer inside a component.
 - Run the plugin in Figma Desktop.
 - Review detected Shopify bindings and prototype interactions.
-- Copy the generated Copy Code section directly into Shopify, or download a ZIP with Liquid, optional CSS/JavaScript developer copies, template JSON, assets, and a conversion report.
+- Choose the scroll animation mode, optionally rename exported assets, then copy the generated Copy Code section directly into Shopify or download a ZIP with Liquid, optional CSS/JavaScript developer copies, template JSON, assets, and a conversion report.
 
 ## What It Generates
 
@@ -33,6 +33,8 @@ The default Copy Code section includes generated CSS in `{% stylesheet %}` and g
 Generated sections are full-bleed by default. Motion uses viewport-width CSS so the Figma stage can expand past Shopify theme `page-width` containers while preserving the original Figma aspect ratio.
 
 For responsive exports, select the desktop frame in Figma and click `Set Desktop`, then select the mobile frame and click `Set Mobile`. Motion combines both frames into one Liquid section and switches them with CSS at mobile widths while sharing duplicate image/SVG assets when possible.
+
+Exported image/SVG assets can be renamed in the Assets tab. After editing filenames, click `Save and Run`; Motion regenerates Copy Code, Copy CSS, Copy JS, Download ZIP, manifest, and report with the saved Shopify asset filenames.
 
 An example copy/paste section is included at `examples/example-shopify-section.liquid`.
 
@@ -59,13 +61,15 @@ manifest.json
 3. Click Set Desktop.
 4. Optional: select the mobile frame/section and click Set Mobile.
 5. Choose Language label: `en`, `cn`, or `my`.
-6. Click Generate export.
-7. Open the Copy Code tab.
-8. Click Copy Code.
-9. In Shopify Admin, go to Online Store > Themes > Edit code.
-10. Add a new section named `motion-figma-prototype-to-shopify`.
-11. Paste the copied Liquid and save.
-12. Open the theme editor and add the section to a page.
+6. Choose Animation mode: `Enter Once`, `Enter Replay`, `Infinite Loop`, `Scroll Scrub`, or `Pin Sequence`.
+7. Click Generate export.
+8. Optional: open Assets, rename exported files, then click Save and Run.
+9. Open the Copy Code tab.
+10. Click Copy Code.
+11. In Shopify Admin, go to Online Store > Themes > Edit code.
+12. Add a new section named `motion-figma-prototype-to-shopify`.
+13. Paste the copied Liquid and save.
+14. Open the theme editor and add the section to a page.
 
 The Shopify schema `name` follows the Schema name field. If Schema name is left as the default and you set File name to something like `home_feature`, Motion uses `home_feature` as the schema display name and `home-feature.liquid` as the Shopify-safe file name.
 
@@ -83,6 +87,10 @@ Designers often build Shopify sections as components or variants. Motion support
 ## Shopify Theme Font Inheritance
 
 Generated text inherits Shopify theme font variables such as `--font-body-family`, `--font-body-style`, `--font-body-weight`, `--font-heading-family`, `--font-heading-style`, and `--font-heading-weight`. Motion keeps the Figma text sizing and uses Shopify's `--font-body-scale` when the theme provides it, without adding extra theme-style settings to the section schema.
+
+## SVG Asset Naming
+
+Vector layers export as SVG automatically. To force a non-vector image/frame layer to export as an SVG asset when Figma supports it, name the layer with one of these formats: `logo.svg`, `Logo [svg]`, `Logo #svg`, or `Logo export=svg`.
 
 ## Dynamic Layer Naming
 
@@ -111,6 +119,7 @@ The plugin reads Figma prototype reactions and compiles the practical subset nee
 - Actions: navigate, swap, change to, open overlay, back, close, URL.
 - Transitions: dissolve, directional movement, push/slide-style movement, and Smart Animate-like matching layer diffs.
 - Smart Animate diffs: position, scale, rotation, opacity, solid fill color, and corner radius, played as destination-layer interpolation instead of whole-frame snapshots.
+- Scroll animation modes: Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, and Pin Sequence. ScrollTrigger is used when a Shopify theme already provides GSAP + ScrollTrigger; otherwise Motion uses a no-dependency fallback.
 
 Unsupported prototype features are preserved in `motion-figma-prototype-to-shopify-report.json` as raw reaction data and warnings.
 
