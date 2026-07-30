@@ -238,6 +238,10 @@
       border-left-color: var(--ok);
     }
 
+    .summary-grid .notice {
+      grid-column: 1 / -1;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -382,8 +386,8 @@
       <div id="guide" class="panel">
         <h2>Onboarding guide</h2>
         <ol>
-          <li>In Figma, open a finished Shopify page or section design.</li>
-          <li>Select one top-level frame, component, group, or prototype flow starting frame.</li>
+          <li>In Figma, open a finished Shopify page, section, component, or component variant design.</li>
+          <li>Select one frame, component, component set, instance, group, or any layer inside a component/instance. If you select a child layer, Motion exports the nearest supported ancestor as the Shopify section boundary.</li>
           <li>For Shopify dynamic content, rename layers with data names such as <code>product.title</code>, <code>product.price</code>, <code>product.image</code>, <code>collection.grid</code>, <code>menu.main</code>, and <code>cart.count</code>.</li>
           <li>Add prototype interactions in Figma Prototype mode. Supported v1 interactions include click, hover, press, mouse enter/leave, mouse down/up, after delay, navigate, swap, change-to, open overlay, back, close, and URL.</li>
           <li>Run this plugin, review warnings, then click <strong>Generate export</strong>.</li>
@@ -513,11 +517,18 @@
     function renderSummary() {
       var summary = state.summary;
       if (!summary) {
-        summaryEl.innerHTML = '<div class="notice">Select one frame, then rescan.</div>';
+        summaryEl.innerHTML = '<div class="notice">Select one frame, component, instance, component set, group, section, or component child layer, then rescan.</div>';
         return;
       }
       var counts = summary.counts || {};
+      var selection = summary.selection || {};
+      var selected = selection.selected || {};
+      var exportRoot = selection.exportRoot || summary.root || {};
+      var selectionNotice = '<div class="notice">' + (selection.usedAncestorRoot
+        ? 'Selected layer <strong>' + escapeHtml(selected.name || "Unknown") + '</strong> (' + escapeHtml(selected.type || "") + ') is inside an exportable component/tree. Export root: <strong>' + escapeHtml(exportRoot.name || "Unknown") + '</strong> (' + escapeHtml(exportRoot.type || "") + ').'
+        : 'Export root: <strong>' + escapeHtml(exportRoot.name || "Unknown") + '</strong> (' + escapeHtml(exportRoot.type || "") + ').') + '</div>';
       summaryEl.innerHTML = [
+        selectionNotice,
         metric(counts.nodes || 0, "Figma nodes"),
         metric(counts.bindings || 0, "Liquid bindings"),
         metric(counts.interactions || 0, "Motion interactions"),

@@ -7,7 +7,7 @@ This repository is prepared as a local Figma plugin. Making it searchable in the
 1. Open Figma Desktop.
 2. Import `manifest.json` from this project.
 3. Run Motion: Figma Prototype to Shopify from Plugins > Development.
-4. Select a frame and confirm the plugin can scan and generate a Shopify section.
+4. Select a frame, component, instance, component set, or a layer inside a component and confirm the plugin can scan and generate a Shopify section.
 5. Run `npm run validate` locally.
 
 ## 2. Replace the Manifest ID Before Publishing
@@ -43,11 +43,11 @@ Export Figma prototype sections into Shopify Liquid with motion-aware CSS and Ja
 
 ### Short Description
 
-Turn a selected Figma frame or prototype flow into a Shopify Online Store 2.0 section. The plugin detects Shopify data layer names, exports assets, reads prototype interactions, and generates Liquid, CSS, JavaScript, template JSON, and a conversion report.
+Turn a selected Figma frame, component, instance, component set, component child layer, or prototype flow into a Shopify Online Store 2.0 section. The plugin detects Shopify data layer names, exports assets, reads prototype interactions, and generates Liquid, CSS, JavaScript, template JSON, and a conversion report.
 
 ### Long Description
 
-Motion: Figma Prototype to Shopify helps designers and Shopify developers move high-fidelity Figma prototype sections into Shopify faster. Select one frame or prototype flow starting point, run the plugin, review detected product, collection, menu, and cart bindings, then export a Shopify Liquid section.
+Motion: Figma Prototype to Shopify helps designers and Shopify developers move high-fidelity Figma prototype sections into Shopify faster. Select one frame, component, instance, component set, component child layer, or prototype flow starting point, run the plugin, review detected product, collection, menu, and cart bindings, then export a Shopify Liquid section.
 
 The generated section includes scoped CSS and JavaScript for common prototype interactions such as click, hover, press, after delay, overlays, URL actions, and Smart Animate-style matching layer changes. The export report preserves raw Figma prototype reactions and clearly lists unsupported features so teams know what to adjust manually.
 
@@ -86,7 +86,7 @@ Replace this with your real email, support page, or help center URL if preferred
 
 Prepare screenshots showing:
 
-1. Selecting a Figma frame.
+1. Selecting a Figma frame, component, instance, component set, or child layer inside a component.
 2. Running the plugin.
 3. Binding review.
 4. Motion review.
@@ -128,7 +128,7 @@ Do not submit until:
 
 - `npm run validate` passes.
 - The plugin imports from manifest in Figma Desktop.
-- A selected frame can be scanned.
+- A selected frame, component, instance, component set, or child layer inside a component can be scanned.
 - Copy Liquid produces a complete Shopify section.
 - Download ZIP creates a ZIP with section, assets, template, README, and report.
 - A Shopify theme preview can render the pasted section.

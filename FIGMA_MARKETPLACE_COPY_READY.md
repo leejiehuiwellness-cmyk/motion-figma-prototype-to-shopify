@@ -31,9 +31,9 @@ Design tools
 ## Description
 
 ```text
-Motion: Figma Prototype to Shopify helps designers and Shopify developers turn a selected Figma frame or prototype flow into a Shopify Online Store 2.0 Liquid section.
+Motion: Figma Prototype to Shopify helps designers and Shopify developers turn a selected Figma frame, component, instance, component set, component child layer, or prototype flow into a Shopify Online Store 2.0 Liquid section.
 
-Select one top-level frame, component, instance, group, section, or prototype starting frame. The plugin scans the selected hierarchy, detects Shopify data layer names, reads prototype reactions, exports assets, and generates a Shopify-ready Liquid section with scoped CSS, JavaScript motion runtime, template JSON, README, and conversion report.
+Select one top-level frame, component, component set, instance, group, section, prototype starting frame, or a layer inside a component/instance. The plugin scans the selected hierarchy, promotes component child selections to the nearest supported component/instance export boundary, detects Shopify data layer names, reads prototype reactions, exports assets, and generates a Shopify-ready Liquid section with scoped CSS, JavaScript motion runtime, template JSON, README, and conversion report.
 
 Supported Shopify layer names include product.title, product.price, product.image, product.description, product.vendor, product.url, product.add_to_cart, collection.grid, menu.main, cart.count, and cart.url.
 
@@ -130,4 +130,3 @@ npm run validate
 ## Current Review Caveat
 
 Figma Community visibility is not instant. After submission, the plugin must pass Figma review before it appears publicly in Community search.
-

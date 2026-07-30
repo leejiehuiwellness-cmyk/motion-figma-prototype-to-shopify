@@ -1,6 +1,6 @@
 # Motion: Figma Prototype to Shopify
 
-Motion: Figma Prototype to Shopify is a Figma Design plugin that exports one selected Figma frame, section, component, instance, or prototype starting frame into a Shopify Online Store 2.0 Liquid section.
+Motion: Figma Prototype to Shopify is a Figma Design plugin that exports one selected Figma frame, section, component, component set, instance, group, or a selected layer inside a component/instance into a Shopify Online Store 2.0 Liquid section.
 
 User guide website: https://leejiehuiwellness-cmyk.github.io/motion-figma-prototype-to-shopify/
 
@@ -8,7 +8,7 @@ Credit: built by Jiehui.
 
 The first version focuses on a practical same-day workflow:
 
-- Select one finished Figma frame or flow starting point.
+- Select one finished Figma frame, component, instance, component variant, or a layer inside a component.
 - Run the plugin in Figma Desktop.
 - Review detected Shopify bindings and prototype interactions.
 - Copy the generated Liquid section directly into Shopify, or download a ZIP with Liquid, CSS, JavaScript, template JSON, assets, and a conversion report.
@@ -48,7 +48,7 @@ manifest.json
 
 ## Quick Shopify Test
 
-1. In Figma, select one top-level frame.
+1. In Figma, select one top-level frame, component, instance, component set, group, section, or a layer inside a component/instance.
 2. Run the plugin.
 3. Click Generate export.
 4. Open the Copy tab.
@@ -57,6 +57,15 @@ manifest.json
 7. Add a new section named `motion-figma-prototype-to-shopify`.
 8. Paste the copied Liquid and save.
 9. Open the theme editor and add the section to a page.
+
+## Component Layer Export
+
+Designers often build Shopify sections as components or variants. Motion supports that workflow:
+
+- Select a component, component set, or instance directly to export it as the Shopify section boundary.
+- Select a child layer inside a component or instance, such as `product.title` or `product.add_to_cart`; Motion automatically exports the nearest component/instance ancestor.
+- Select a variant component to preserve prototype `CHANGE_TO` / Smart Animate-style state changes between variants when matching layer names and hierarchy are consistent.
+- The export report records both the selected layer and the actual export root so builders can verify the component boundary before pasting into Shopify.
 
 ## Dynamic Layer Naming
 

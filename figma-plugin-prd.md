@@ -161,8 +161,10 @@ Priority: P0
 
 The plugin must:
 
-- Require exactly one meaningful selected root node, or clearly ask user to select one.
-- Accept top-level `FrameNode`, `ComponentNode`, `InstanceNode`, `SectionNode`, or group-like root when exportable.
+- Require exactly one meaningful selected node, or clearly ask user to select one.
+- Accept top-level `FrameNode`, `ComponentNode`, `ComponentSetNode`, `InstanceNode`, `SectionNode`, or group-like root when exportable.
+- Accept a selected child layer inside a component, instance, component set, frame, group, or section, then promote the export boundary to the nearest supported ancestor.
+- Record both the selected layer and actual export root in the export summary and conversion report.
 - Detect prototype starting point from selected node reactions when available.
 - Traverse child nodes and collect:
   - node id
@@ -445,7 +447,7 @@ The report must include:
 
 The UI must include:
 
-- Empty state: asks user to select a frame/flow.
+- Empty state: asks user to select a frame, component, component child layer, or flow.
 - Audit running state.
 - Audit result state.
 - Binding review state.
@@ -547,6 +549,7 @@ type ShopifyExportModel = {
 ### 10.1 MVP Acceptance
 
 - Given a selected hero/product section in Figma, when the user runs the plugin, then the plugin can export a ZIP with valid Shopify section, CSS, JS, assets, README, and report.
+- Given a selected layer inside a Figma component or instance, when the user runs the plugin, then the plugin promotes the export root to the nearest supported component/instance ancestor and exports the full component hierarchy to Shopify.
 - Given a layer named `product.title`, when exported, then the generated Liquid renders `{{ product.title }}`.
 - Given a layer named `product.price`, when exported, then the generated Liquid renders a money-formatted product price.
 - Given a product card group under `collection.grid`, when exported, then the generated Liquid loops through collection products.
@@ -622,4 +625,3 @@ type ShopifyExportModel = {
 - Shopify sections: https://shopify.dev/docs/storefronts/themes/architecture/sections
 - Shopify section schema: https://shopify.dev/docs/storefronts/themes/architecture/sections/section-schema
 - Shopify CLI for themes: https://shopify.dev/docs/storefronts/themes/tools/cli
-

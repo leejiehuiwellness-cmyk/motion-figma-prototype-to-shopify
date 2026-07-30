@@ -12,13 +12,14 @@ Primary references:
 
 | Figma concept | Meaning | V1 behavior |
 | --- | --- | --- |
-| Flow starting point | The first frame in a prototype flow | Use the selected frame or section as the Shopify section root |
+| Flow starting point | The first frame, component, instance, or variant in a prototype flow | Use the selected frame, section, component, component set, instance, group, or nearest supported ancestor as the Shopify section root |
+| Component layer selection | A child layer selected inside a component or instance | Automatically promotes export to the nearest component/instance/component set boundary when available |
 | Hotspot | Layer where the interaction starts | Compiled to a DOM element with `data-fts-node` |
 | Trigger | User or timed event that starts an action | Supported subset is compiled; unsupported triggers are reported |
 | Action | What happens after the trigger | Supported subset is compiled; unsupported actions are reported |
 | Destination | Target frame, overlay, URL, or state | Target frames are read when available |
 | Animation / transition | Visual movement between states | Supported transitions become CSS/JS motion |
-| Smart Animate | Matching layer animation between frames or variants | Converted by comparing matching layer names and hierarchy |
+| Smart Animate | Matching layer animation between frames, components, instances, or variants | Converted by comparing matching layer names and hierarchy |
 | Overlay | Floating destination above current frame | Exported as hidden overlay markup with JS open/close |
 | Overflow / scrolling | Prototype viewport scroll behavior | Reported in v1; not compiled as scroll-linked Shopify behavior |
 | Device preview | Prototype presentation shell | Not relevant to Shopify export |
@@ -81,9 +82,10 @@ The export report includes a `prototypeReactions` array with the raw interaction
 
 ## Design Rules for Reliable Export
 
-1. Use one clean top-level frame for the Shopify section.
-2. Keep source and destination layer names consistent for Smart Animate.
-3. Use Auto Layout when possible.
-4. Use layer names for Liquid binding.
-5. Avoid relying on prototype-only variables or conditionals in v1.
-6. For Shopify product and collection data, name layers explicitly instead of using visual labels only.
+1. Use one clean top-level frame, component, instance, or variant for the Shopify section.
+2. Designers may select a child layer inside a component; Motion will export the nearest supported component/instance ancestor.
+3. Keep source and destination layer names consistent for Smart Animate.
+4. Use Auto Layout when possible.
+5. Use layer names for Liquid binding.
+6. Avoid relying on prototype-only variables or conditionals in v1.
+7. For Shopify product and collection data, name layers explicitly instead of using visual labels only.

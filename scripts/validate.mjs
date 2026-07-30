@@ -41,6 +41,7 @@ assert(manifest.main === "code.js", "Manifest main must be code.js");
 assert(manifest.ui === "ui.html", "Manifest UI must be ui.html");
 assert(Array.isArray(manifest.editorType) && manifest.editorType.includes("figma"), "Manifest must target Figma Design");
 assert(Array.isArray(manifest.menu) && manifest.menu[0]?.command === "export-selected-frame", "Manifest must expose an export command");
+assert(manifest.menu[0]?.name.includes("component"), "Manifest menu should mention component export");
 assert(manifest.documentAccess === "dynamic-page", "Manifest must use dynamic-page document access");
 assert(manifest.networkAccess?.allowedDomains?.[0] === "none", "Plugin should not request network access");
 
@@ -60,6 +61,9 @@ for (const script of scripts) {
   "collection.grid",
   "menu.main",
   "cart.count",
+  "COMPONENT_SET",
+  "resolveExportRoot",
+  "usedAncestorRoot",
   "ON_CLICK",
   "ON_HOVER",
   "AFTER_TIMEOUT",
@@ -72,6 +76,8 @@ for (const script of scripts) {
 const onboarding = read("ONBOARDING.md");
 [
   "Select the starting frame",
+  "component set",
+  "nearest supported ancestor",
   "product.title",
   "collection.grid",
   "Copy Liquid",
@@ -117,6 +123,7 @@ const docsHome = read("docs/index.html");
   "by Jiehui",
   "完整使用流程",
   "Import plugin from manifest",
+  "component child layer",
   "product.title",
   "Shopify Admin",
   "Prototype motion",
@@ -141,6 +148,13 @@ assert(exportedReport, "Runtime export missing conversion report");
 const parsedReport = JSON.parse(exportedReport.content);
 assert(Array.isArray(parsedReport.prototypeReactions), "Report missing raw prototype reactions");
 assert(parsedReport.prototypeReactions.length > 0, "Report should include at least one raw prototype reaction in smoke test");
+assert(parsedReport.selection?.selected?.type === "FRAME", "Report should record the selected component child layer");
+assert(parsedReport.selection?.exportRoot?.type === "INSTANCE", "Report should promote selected component child layer to instance export root");
+assert(runtimeResult.exportMessage.summary.selection.usedAncestorRoot === true, "Summary should flag ancestor export root when selecting a component child layer");
+assert(runtimeResult.exportMessage.summary.root.type === "INSTANCE", "Summary root should be the exported instance");
+const exportReadme = runtimeResult.exportMessage.files.find((file) => file.path === "README.md");
+assert(exportReadme?.content.includes("Selected layer: `product.add_to_cart` (FRAME)."), "Export README should document selected layer");
+assert(exportReadme?.content.includes("Export root: `Product Hero Component` (INSTANCE)."), "Export README should document promoted component export root");
 [
   "{{ fts_product.title | escape }}",
   "{% schema %}",
@@ -203,8 +217,8 @@ async function runPluginRuntimeSmokeTest(code, ui) {
   };
   const rootNode = {
     id: "1:2",
-    name: "Product Hero",
-    type: "FRAME",
+    name: "Product Hero Component",
+    type: "INSTANCE",
     visible: true,
     parent: { type: "PAGE" },
     absoluteBoundingBox: { x: 0, y: 0, width: 720, height: 360 },
@@ -231,10 +245,13 @@ async function runPluginRuntimeSmokeTest(code, ui) {
       return new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
     }
   };
+  textNode.parent = rootNode;
+  buttonNode.parent = rootNode;
   const destinationNode = {
     ...rootNode,
     id: "9:1",
     name: "Product Hero Hover",
+    type: "COMPONENT",
     absoluteBoundingBox: { x: 800, y: 0, width: 720, height: 360 },
     children: [
       { ...textNode, id: "9:3", absoluteBoundingBox: { x: 832, y: 40, width: 320, height: 48 } },
@@ -261,7 +278,7 @@ async function runPluginRuntimeSmokeTest(code, ui) {
     figma: {
       editorType: "figma",
       mixed: Symbol("mixed"),
-      currentPage: { selection: [rootNode] },
+      currentPage: { selection: [buttonNode] },
       ui: {
         postMessage(message) {
           messages.push(message);

@@ -2,13 +2,14 @@
 
 This guide is written for a designer or Shopify builder who wants to move one Figma prototype section into Shopify.
 
-## 1. Prepare the Figma Frame
+## 1. Prepare the Figma Frame or Component
 
 1. Open your Figma Design file.
 2. Make sure the design section is finalized.
-3. Put the section in one top-level frame when possible.
-4. If the frame is part of a prototype flow, make sure it has prototype connections from buttons, links, overlays, or hover states.
-5. Select only one top-level frame, section, component, instance, or group before running the plugin.
+3. Put the Shopify section in one clear frame, component, component variant, instance, group, or section when possible.
+4. If the component is part of a prototype flow, make sure it has prototype connections from buttons, links, overlays, hover states, or variant state changes.
+5. Select only one frame, section, component, component set, instance, group, or a layer inside a component/instance before running the plugin.
+6. If you select a child layer inside a component or instance, Motion automatically exports the nearest supported ancestor as the Shopify section boundary.
 
 ## 2. Name Dynamic Shopify Layers
 
@@ -70,7 +71,7 @@ For the complete trigger/action/transition support table, read `PROTOTYPE_SUPPOR
 ## 4. Run the Plugin
 
 1. Open Figma Desktop.
-2. Select the starting frame.
+2. Select the starting frame, component, component instance, component set, group, section, or a layer inside the component you want to export.
 3. Run Plugins > Development > Motion: Figma Prototype to Shopify.
 4. Click Rescan if you changed the selection.
 5. Review Overview, Bindings, Motion, and warnings.
@@ -107,6 +108,7 @@ Check:
 
 - Desktop layout.
 - Mobile layout.
+- The export report selection block: selected layer and export root should match the component boundary you want in Shopify.
 - Product title, price, image, and add-to-cart behavior.
 - Collection product loop.
 - Menu links.

@@ -7,7 +7,7 @@
   "editorType": ["figma"],
   "menu": [
     {
-      "name": "Export selected frame to Shopify",
+      "name": "Export selected frame or component to Shopify",
       "command": "export-selected-frame"
     }
   ],

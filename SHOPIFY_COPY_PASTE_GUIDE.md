@@ -6,7 +6,7 @@ For a ready-made smoke test before running the plugin in Figma, use `examples/ex
 
 ## A. From Figma
 
-1. Select one top-level frame.
+1. Select one frame, component, component set, instance, group, section, or a layer inside a component/instance.
 2. Run Motion: Figma Prototype to Shopify.
 3. Click Generate export.
 4. Open the Copy tab.
@@ -65,6 +65,7 @@ Then upload that file into Shopify:
 After saving, Shopify should render:
 
 - The selected Figma section layout.
+- The selected component/instance layout when a designer builds the Shopify section as a Figma component.
 - Liquid product/collection/menu/cart data for named layers.
 - Inline CSS from the generated `{% stylesheet %}` block.
 - Inline JavaScript motion from the generated `{% javascript %}` block.

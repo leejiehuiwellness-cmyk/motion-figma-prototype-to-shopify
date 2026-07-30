@@ -6,7 +6,7 @@
     <title>Motion: Figma Prototype to Shopify by Jiehui</title>
     <meta
       name="description"
-      content="Motion: Figma Prototype to Shopify 是一个 Figma plugin，把选中的 Figma prototype frame 转成可复制到 Shopify 的 Liquid section code。"
+      content="Motion: Figma Prototype to Shopify 是一个 Figma plugin，把选中的 Figma prototype frame、component、instance 或 component child layer 转成可复制到 Shopify 的 Liquid section code。"
     >
     <meta property="og:title" content="Motion: Figma Prototype to Shopify">
     <meta property="og:description" content="把 Figma prototype interaction 和 dynamic animation 转成 Shopify Liquid section。Credit by Jiehui.">
@@ -46,7 +46,7 @@
           <p class="eyebrow">Figma plugin · Shopify Liquid section exporter</p>
           <h1 id="hero-title">Motion: Figma Prototype to Shopify</h1>
           <p class="hero-copy">
-            把设计师做好的 Figma prototype frame，导出成 Shopify Online Store 2.0 可用的 Liquid section，
+            把设计师做好的 Figma prototype frame、component、instance 或 component 内部 layer，导出成 Shopify Online Store 2.0 可用的 Liquid section，
             并尽量保留 click、hover、delay、overlay 与 Smart Animate 风格的 motion。
           </p>
           <div class="hero-actions" aria-label="Primary actions">
@@ -65,8 +65,8 @@
         </div>
         <div class="quick-item">
           <span>02</span>
-          <strong>Select frame</strong>
-          <p>选择一个完整 frame、component、instance 或 prototype 起点。</p>
+          <strong>Select component</strong>
+          <p>选择完整 frame、component、instance，或 component 内部任意 layer。</p>
         </div>
         <div class="quick-item">
           <span>03</span>
@@ -83,9 +83,9 @@
       <section id="guide" class="section intro-grid" aria-labelledby="guide-title">
         <div>
           <p class="eyebrow">User guide</p>
-          <h2 id="guide-title">怎样从 Figma prototype 变成 Shopify section</h2>
+          <h2 id="guide-title">怎样从 Figma prototype/component 变成 Shopify section</h2>
           <p>
-            Motion 的目标不是只截图一个静态页面，而是把 Figma 里的结构、动态层命名和 prototype interaction
+            Motion 的目标不是只截图一个静态页面，而是把 Figma 里的 frame/component 结构、动态层命名和 prototype interaction
             转换成一个 Shopify 可以安装、配置、预览和上线的 section file。
           </p>
         </div>
@@ -126,8 +126,8 @@ motion-figma-prototype-to-shopify-report.json</code></pre>
           <li>
             <span class="step-number">3</span>
             <div>
-              <h3>选择要转换的 prototype 起点</h3>
-              <p>选中一个顶层 frame、section、component 或 instance。建议选择完整的 Shopify 页面模块，例如 product hero、collection grid、announcement bar、campaign block。</p>
+              <h3>选择要转换的 prototype 或 component 起点</h3>
+              <p>选中一个顶层 frame、section、component、component set、instance、group，或 component/instance 内部任意 layer。若选中的是子 layer，Motion 会自动提升到最近的 component/instance/component set 作为 Shopify section 边界。</p>
             </div>
           </li>
           <li>
@@ -148,7 +148,7 @@ motion-figma-prototype-to-shopify-report.json</code></pre>
             <span class="step-number">6</span>
             <div>
               <h3>生成 Shopify Liquid export</h3>
-              <p>运行 Motion，点击 Generate export。你可以直接 Copy Liquid，也可以 Download ZIP 获取 section、assets、template JSON 和 conversion report。</p>
+              <p>运行 Motion，点击 Generate export。你可以直接 Copy Liquid，也可以 Download ZIP 获取 section、assets、template JSON 和 conversion report。Report 会记录 selected layer 与实际 export root。</p>
             </div>
           </li>
           <li>
@@ -173,7 +173,7 @@ motion-figma-prototype-to-shopify-report.json</code></pre>
           <p class="eyebrow">Figma setup</p>
           <h2 id="figma-title">设计师需要怎样准备 Figma file</h2>
           <p>
-            最好的输入是一个完整、命名清楚、prototype flow 已连好的 frame。Motion 会尽力复制视觉布局和 motion，
+            最好的输入是一个完整、命名清楚、prototype flow 已连好的 frame、component、instance 或 variant。Motion 会尽力复制视觉布局和 motion，
             但 Figma 原型不是浏览器运行时，所以复杂逻辑会写进 report，让开发者知道要手动补哪一段。
           </p>
         </div>
