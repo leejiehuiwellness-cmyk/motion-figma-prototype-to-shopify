@@ -69,6 +69,8 @@ Keep names consistent between source and destination frames if you want Smart An
 
 The Motion tab also shows the detected prototype route graph. If a sequence loops back, such as one variant linking to Variant 4 and Variant 4 linking back to Variant 3, Motion flags that loop before you copy the Shopify code.
 
+Motion keeps Figma layer stacking by giving earlier/top layer-panel children a higher z-index and bottom/background layers a lower z-index. CSS output groups repeated declarations across similar layers, while unique position, size, rotation, and z-index stay on each layer.
+
 For the complete trigger/action/transition support table, read `PROTOTYPE_SUPPORT_MATRIX.md`. It follows Figma's official "Guide to prototyping in Figma" and the Figma Plugin API reaction model.
 
 ## 3.1 Force SVG Asset Export
@@ -96,6 +98,7 @@ Logo export=svg
 9. Review Overview, Bindings, Motion, and warnings.
 10. Click Generate export.
 11. Optional: open Assets, rename exported image/SVG files, then click Save and Run so Copy Code, Copy CSS, Copy JS, ZIP, manifest, and report all use the new filenames.
+12. For ZIP/external setup, upload `assets/motion-figma-gsap-runtime.css` and `assets/motion-figma-gsap-runtime.js` with the other generated assets. Copy Code mode already contains this code inline.
 
 ## 5. Copy to Shopify
 

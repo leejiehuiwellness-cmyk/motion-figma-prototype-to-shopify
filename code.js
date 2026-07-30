@@ -2,6 +2,8 @@
   "use strict";
 
   var PLUGIN_VERSION = "0.1.0";
+  var SHARED_RUNTIME_JS_ASSET = "motion-figma-gsap-runtime.js";
+  var SHARED_RUNTIME_CSS_ASSET = "motion-figma-gsap-runtime.css";
   var MAX_ASSETS = 60;
   var MAX_ASSET_BYTES = 6 * 1024 * 1024;
   var SUPPORTED_ROOT_TYPES = {
@@ -175,6 +177,8 @@
       assetKeyMap: {},
       assetFilenameMap: {}
     };
+    shared.assetFilenameMap[SHARED_RUNTIME_CSS_ASSET] = true;
+    shared.assetFilenameMap[SHARED_RUNTIME_JS_ASSET] = true;
     var classPrefix = "fts-" + slug(settings.filePrefix || exportRequests[0].root.name || "section", "section");
     var sectionType = slug(settings.filePrefix || "motion-figma-prototype-to-shopify", "motion-figma-prototype-to-shopify");
     var viewports = [];
@@ -621,7 +625,7 @@
         if (childModel) {
           childModel.layerIndex = i;
           childModel.layerPanelIndex = node.children.length - i;
-          childModel.zIndex = i + 1;
+          childModel.zIndex = node.children.length - i;
           model.children.push(childModel);
         }
       }
@@ -1318,7 +1322,8 @@
 
   function generateShopifyFiles(input) {
     var css = generateCss(input.states, input.tokens, input.classPrefix, input.stage, input.viewports || []);
-    var js = generateRuntimeJs();
+    var sharedCss = generateSharedRuntimeCss();
+    var js = generateSharedRuntimeJs();
     var liquid = generateLiquidSection(input, css, js);
     var report = generateReport(input);
     var manifest = generateExportManifest(input);
@@ -1346,6 +1351,16 @@
       },
       {
         path: "assets/" + input.sectionType + ".js",
+        type: "text",
+        content: js
+      },
+      {
+        path: "assets/" + SHARED_RUNTIME_CSS_ASSET,
+        type: "text",
+        content: sharedCss
+      },
+      {
+        path: "assets/" + SHARED_RUNTIME_JS_ASSET,
         type: "text",
         content: js
       },
@@ -1437,8 +1452,9 @@
     }
     parts.push("");
     if (!inlineCode) {
+      parts.push("{{ '" + SHARED_RUNTIME_CSS_ASSET + "' | asset_url | stylesheet_tag }}");
       parts.push("{{ '" + input.sectionType + ".css' | asset_url | stylesheet_tag }}");
-      parts.push("<script src=\"{{ '" + input.sectionType + ".js' | asset_url }}\" defer></script>");
+      parts.push("<script src=\"{{ '" + SHARED_RUNTIME_JS_ASSET + "' | asset_url }}\" defer></script>");
       parts.push("");
     }
     parts.push("<section class=\"" + input.classPrefix + "\" data-motion-figma-responsive-section>");
@@ -1625,8 +1641,7 @@
 
   function childrenForMarkup(node) {
     if (!node || !node.children) return [];
-    if (node.layout && node.layout.mode) return node.children;
-    return node.children.slice().reverse();
+    return node.children;
   }
 
   function renderOverlay(node, classPrefix) {
@@ -1686,8 +1701,40 @@
     return "div";
   }
 
+  function generateSharedRuntimeCss() {
+    return [
+      "/* Shared theme asset: assets/" + SHARED_RUNTIME_CSS_ASSET + " */",
+      "[data-motion-figma-prototype-to-shopify],",
+      "[data-motion-figma-prototype-to-shopify] *,",
+      "[data-motion-figma-prototype-to-shopify] *::before,",
+      "[data-motion-figma-prototype-to-shopify] *::after { box-sizing: border-box; }",
+      "[data-motion-figma-prototype-to-shopify] { display: block; }",
+      "[data-motion-figma-prototype-to-shopify] .fts-node { min-width: 0; transform-origin: center center; backface-visibility: hidden; }",
+      "[data-motion-figma-prototype-to-shopify] .fts-node__asset { box-shadow: none; filter: none; }",
+      "[data-motion-figma-prototype-to-shopify] img { display: block; width: 100%; height: 100%; object-fit: cover; }",
+      "[data-motion-figma-prototype-to-shopify] a { color: inherit; text-decoration: none; }",
+      "[data-motion-figma-prototype-to-shopify] button { font: inherit; color: inherit; cursor: pointer; border: 0; background: transparent; }",
+      "[data-motion-figma-prototype-to-shopify][data-fts-scroll-mode=\"pin-sequence\"].is-fts-pinned-fallback { min-height: max(var(--fts-pin-distance, 1600px), 100vh); }",
+      "[data-motion-figma-prototype-to-shopify][data-fts-scroll-mode=\"pin-sequence\"].is-fts-pinned-fallback .fts-stage { position: sticky; top: 0; }",
+      ".fts-overlay[hidden] { display: none; }",
+      ".fts-overlay { position: fixed; inset: 0; z-index: 2147483000; display: grid; place-items: center; opacity: 0; pointer-events: none; transition: opacity 220ms ease; }",
+      ".fts-overlay.is-open { opacity: 1; pointer-events: auto; }",
+      ".fts-overlay__backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.4); }",
+      ".fts-overlay-panel { position: relative; z-index: 1; }"
+    ].join("\n");
+  }
+
+  function generateSharedRuntimeJs() {
+    return [
+      "/* Shared theme asset: assets/" + SHARED_RUNTIME_JS_ASSET + " */",
+      generateRuntimeJs()
+    ].join("\n");
+  }
+
   function generateCss(states, tokens, classPrefix, stage, viewports) {
     var lines = [];
+    lines.push(generateSharedRuntimeCss());
+    lines.push("/* Section-specific Figma layer styles */");
     lines.push("." + classPrefix + " {");
     lines.push("  --fts-text: " + (tokens.colors[0] || "#111111") + ";");
     lines.push("  --fts-bg: " + (tokens.backgrounds[0] || "transparent") + ";");
@@ -1708,20 +1755,12 @@
     lines.push("  margin-right: calc(50% - 50dvw);");
     lines.push("  position: relative;");
     lines.push("}");
-    lines.push("." + classPrefix + " *, ." + classPrefix + " *::before, ." + classPrefix + " *::after { box-sizing: border-box; }");
-    lines.push("." + classPrefix + " .fts-node { transform-origin: top left; backface-visibility: hidden; }");
-    lines.push("." + classPrefix + " img { display: block; width: 100%; height: 100%; object-fit: cover; }");
-    lines.push("." + classPrefix + " .fts-node__asset { box-shadow: none; filter: none; }");
-    lines.push("." + classPrefix + " a { color: inherit; text-decoration: none; }");
-    lines.push("." + classPrefix + " button { font: inherit; color: inherit; cursor: pointer; border: 0; background: transparent; }");
     lines.push("." + classPrefix + " h1, ." + classPrefix + " h2, ." + classPrefix + " h3, ." + classPrefix + " h4, ." + classPrefix + " h5, ." + classPrefix + " h6 {");
     lines.push("  font-family: var(--font-heading-family, var(--font-body-family, inherit));");
     lines.push("  font-style: var(--font-heading-style, var(--font-body-style, normal));");
     lines.push("  font-weight: var(--font-heading-weight, var(--font-body-weight, inherit));");
     lines.push("}");
     lines.push("." + classPrefix + " .fts-responsive { width: 100%; }");
-    lines.push("." + classPrefix + " .fts-responsive[data-fts-scroll-mode=\"pin-sequence\"].is-fts-pinned-fallback { min-height: max(var(--fts-pin-distance, 1600px), 100vh); }");
-    lines.push("." + classPrefix + " .fts-responsive[data-fts-scroll-mode=\"pin-sequence\"].is-fts-pinned-fallback .fts-stage { position: sticky; top: 0; }");
     if (hasViewport(viewports, "desktop") && hasViewport(viewports, "mobile")) {
       lines.push("." + classPrefix + " .fts-responsive--desktop { display: block; }");
       lines.push("." + classPrefix + " .fts-responsive--mobile { display: none; }");
@@ -1751,19 +1790,16 @@
     lines.push("  visibility: visible;");
     lines.push("  pointer-events: auto;");
     lines.push("}");
-    lines.push(".fts-overlay[hidden] { display: none; }");
-    lines.push(".fts-overlay { position: fixed; inset: 0; z-index: 2147483000; display: grid; place-items: center; opacity: 0; pointer-events: none; transition: opacity 220ms ease; }");
-    lines.push(".fts-overlay.is-open { opacity: 1; pointer-events: auto; }");
-    lines.push(".fts-overlay__backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.4); }");
-    lines.push(".fts-overlay-panel { position: relative; z-index: 1; }");
     lines.push(".fts-generated-product-card { display: grid; gap: 10px; }");
     lines.push(".fts-generated-product-card img { aspect-ratio: 1 / 1; object-fit: cover; }");
     var emitted = {};
+    var nodeRules = [];
     walkAll(states, function (node, parent) {
       if (emitted[node.id]) return;
       emitted[node.id] = true;
-      lines.push.apply(lines, cssForNode(node, parent, classPrefix));
+      nodeRules.push(cssRuleFromLines(cssForNode(node, parent, classPrefix)));
     });
+    lines.push.apply(lines, emitGroupedCssRules(nodeRules));
     lines.push("@media (max-width: 749px) {");
     lines.push("  ." + classPrefix + " .fts-stage { max-width: 100%; }");
     if (hasViewport(viewports, "desktop") && hasViewport(viewports, "mobile")) {
@@ -1782,8 +1818,6 @@
     var selector = "." + classPrefix + " ." + node.className;
     if (node.depth === 0) selector = "." + classPrefix + "." + node.className + ", ." + classPrefix + " ." + node.className;
     var lines = [selector + " {"];
-    lines.push("  box-sizing: border-box;");
-    lines.push("  min-width: 0;");
 
     if (node.binding && node.binding.key === "collection.grid") {
       lines.push("  display: grid;");
@@ -1824,6 +1858,9 @@
     if (node.depth !== 0 && parent && !(parent.layout && parent.layout.mode) && node.zIndex) {
       lines.push("  z-index: " + Math.max(1, Math.round(node.zIndex)) + ";");
     }
+    if (Math.abs(node.rotation || 0) > 0.01) {
+      lines.push("  transform: rotate(" + round(node.rotation, 3) + "deg);");
+    }
 
     if (node.children.length && node.depth !== 0 && node.layout.mode) {
       lines.push.apply(lines, flexCss(node));
@@ -1845,7 +1882,12 @@
     if (shadow) lines.push("  box-shadow: " + shadow + ";");
     if (node.text) {
       if (node.text.fontSize) lines.push("  font-size: calc(" + px(node.text.fontSize) + " * var(--font-body-scale, 1));");
+      if (node.text.fontWeight) lines.push("  font-weight: " + node.text.fontWeight + ";");
+      if (node.text.fontStyle) lines.push("  font-style: " + node.text.fontStyle + ";");
       if (node.text.lineHeight) lines.push("  line-height: " + node.text.lineHeight + ";");
+      if (node.text.letterSpacing) lines.push("  letter-spacing: " + node.text.letterSpacing + ";");
+      if (node.text.textAlign) lines.push("  text-align: " + node.text.textAlign + ";");
+      if (node.text.textTransform) lines.push("  text-transform: " + node.text.textTransform + ";");
       lines.push("  white-space: pre-wrap;");
       lines.push("  overflow-wrap: anywhere;");
     }
@@ -1857,6 +1899,95 @@
     }
     lines.push("}");
     return lines;
+  }
+
+  function cssRuleFromLines(lines) {
+    return {
+      selector: String(lines[0] || "").replace(/\s*\{\s*$/, ""),
+      declarations: lines.slice(1, -1).map(function (line) {
+        return String(line || "").trim();
+      }).filter(Boolean)
+    };
+  }
+
+  function emitGroupedCssRules(rules) {
+    var groups = {};
+    var orderedKeys = [];
+    var output = [];
+    (rules || []).forEach(function (rule) {
+      var split = splitCssDeclarations(rule.declarations);
+      var key = split.shared.join("\n");
+      if (key && split.shared.length >= 2) {
+        if (!groups[key]) {
+          groups[key] = { shared: split.shared, rules: [] };
+          orderedKeys.push(key);
+        }
+        groups[key].rules.push({ selector: rule.selector, local: split.local });
+      } else {
+        output.push(cssLinesFromRule(rule.selector, rule.declarations));
+      }
+    });
+
+    orderedKeys.forEach(function (key) {
+      var group = groups[key];
+      if (group.rules.length < 2) {
+        group.rules.forEach(function (rule) {
+          output.push(cssLinesFromRule(rule.selector, rule.local.concat(group.shared)));
+        });
+        return;
+      }
+      output.push(cssLinesFromRule(group.rules.map(function (rule) { return rule.selector; }).join(",\n"), group.shared));
+      group.rules.forEach(function (rule) {
+        if (rule.local.length) output.push(cssLinesFromRule(rule.selector, rule.local));
+      });
+    });
+    return flatten(output);
+  }
+
+  function splitCssDeclarations(declarations) {
+    var shared = [];
+    var local = [];
+    (declarations || []).forEach(function (declaration) {
+      if (isLocalCssDeclaration(declaration)) local.push(declaration);
+      else shared.push(declaration);
+    });
+    return { shared: shared, local: local };
+  }
+
+  function isLocalCssDeclaration(declaration) {
+    var prop = String(declaration || "").split(":")[0].trim();
+    return [
+      "position",
+      "inset",
+      "left",
+      "top",
+      "right",
+      "bottom",
+      "width",
+      "height",
+      "min-height",
+      "max-width",
+      "aspect-ratio",
+      "margin-inline",
+      "z-index",
+      "display",
+      "grid-template-columns",
+      "gap",
+      "flex-wrap",
+      "flex-direction",
+      "padding",
+      "justify-content",
+      "align-items",
+      "transform",
+      "overflow"
+    ].indexOf(prop) !== -1;
+  }
+
+  function cssLinesFromRule(selector, declarations) {
+    if (!declarations || !declarations.length) return [];
+    return [selector + " {"].concat(declarations.map(function (declaration) {
+      return "  " + declaration;
+    })).concat(["}"]);
   }
 
   function flexCss(node) {
@@ -2488,6 +2619,8 @@
       states: input.states.map(stateSummary),
       files: [
         "sections/" + input.sectionType + ".liquid",
+        "assets/" + SHARED_RUNTIME_CSS_ASSET,
+        "assets/" + SHARED_RUNTIME_JS_ASSET,
         "assets/" + input.sectionType + ".css",
         "assets/" + input.sectionType + ".js",
         "motion-figma-prototype-to-shopify-manifest.json",
@@ -2502,7 +2635,7 @@
       warnings: input.warnings,
       manualChecklist: [
         input.settings.codeMode === "external"
-          ? "Paste sections/" + input.sectionType + ".liquid into your Shopify theme sections folder or Shopify code editor, then upload the generated CSS and JavaScript assets."
+          ? "Paste sections/" + input.sectionType + ".liquid into your Shopify theme sections folder or Shopify code editor, then upload the generated section CSS plus shared runtime CSS/JavaScript assets."
           : "Use Copy Code or paste sections/" + input.sectionType + ".liquid into your Shopify theme sections folder. The generated CSS and JavaScript are already inside this section file.",
         "Upload every referenced generated image/SVG asset from the assets folder into Shopify theme assets.",
         "If assets were renamed in the plugin, use the `shopifyFilename` values from the manifest and report.",
@@ -2530,6 +2663,8 @@
       assets: input.assetManifest,
       files: [
         "sections/" + input.sectionType + ".liquid",
+        "assets/" + SHARED_RUNTIME_CSS_ASSET,
+        "assets/" + SHARED_RUNTIME_JS_ASSET,
         "assets/" + input.sectionType + ".css",
         "assets/" + input.sectionType + ".js"
       ].concat(input.assets.map(function (asset) { return asset.path; })),
@@ -2601,6 +2736,11 @@
       lines.push("- No variant-to-variant prototype routes detected.");
     }
     lines.push("");
+    lines.push("## Shared runtime assets");
+    lines.push("");
+    lines.push("- `assets/" + SHARED_RUNTIME_CSS_ASSET + "`");
+    lines.push("- `assets/" + SHARED_RUNTIME_JS_ASSET + "`");
+    lines.push("");
     lines.push("## Warnings");
     lines.push("");
     lines.push(input.warnings.length ? input.warnings.map(function (item) { return "- " + item.code + ": " + item.message; }).join("\n") : "- No conversion warnings.");
@@ -2664,8 +2804,15 @@
       "## Copy Code mode",
       "",
       input.settings.codeMode === "external"
-        ? "This export is in external code mode, so the Liquid section loads CSS and JavaScript with Shopify `asset_url` and does not inline the same runtime."
+        ? "This export is in external code mode, so the Liquid section loads section CSS plus shared runtime assets with Shopify `asset_url` and does not inline the same runtime."
         : "This export is in Copy Code mode, so the Liquid section includes generated CSS in `{% stylesheet %}` and generated JavaScript in a regular `<script>` tag. The separate CSS/JS files in the ZIP are optional developer copies and are not loaded by the section.",
+      "",
+      "## Shared runtime assets",
+      "",
+      "- `assets/" + SHARED_RUNTIME_CSS_ASSET + "`",
+      "- `assets/" + SHARED_RUNTIME_JS_ASSET + "`",
+      "",
+      "Copy Code mode already includes this runtime/base CSS inline. Upload the shared assets when using the ZIP or external code mode.",
       "",
       "## Scroll animation",
       "",
@@ -2789,8 +2936,12 @@
       characters: node.characters || "",
       fontFamily: fontFamily(node.fontName),
       fontSize: typeof node.fontSize === "number" ? node.fontSize : null,
-      fontWeight: typeof node.fontWeight === "number" ? node.fontWeight : null,
-      lineHeight: lineHeightCss(node.lineHeight)
+      fontStyle: fontStyleFromFontName(node.fontName),
+      fontWeight: typeof node.fontWeight === "number" ? node.fontWeight : fontWeightFromFontName(node.fontName),
+      lineHeight: lineHeightCss(node.lineHeight),
+      letterSpacing: letterSpacingCss(node.letterSpacing),
+      textAlign: "textAlignHorizontal" in node ? textAlignCss(node.textAlignHorizontal) : null,
+      textTransform: "textCase" in node ? textCaseCss(node.textCase) : null
     };
   }
 
@@ -3021,11 +3172,49 @@
     return "";
   }
 
+  function fontWeightFromFontName(fontName) {
+    if (!fontName || fontName === figma.mixed || typeof fontName.style !== "string") return null;
+    var style = fontName.style.toLowerCase();
+    if (style.indexOf("thin") !== -1) return 100;
+    if (style.indexOf("extra light") !== -1 || style.indexOf("extralight") !== -1 || style.indexOf("ultra light") !== -1) return 200;
+    if (style.indexOf("light") !== -1) return 300;
+    if (style.indexOf("medium") !== -1) return 500;
+    if (style.indexOf("semi bold") !== -1 || style.indexOf("semibold") !== -1 || style.indexOf("demi bold") !== -1) return 600;
+    if (style.indexOf("extra bold") !== -1 || style.indexOf("extrabold") !== -1 || style.indexOf("heavy") !== -1 || style.indexOf("black") !== -1) return 800;
+    if (style.indexOf("bold") !== -1) return 700;
+    return 400;
+  }
+
+  function fontStyleFromFontName(fontName) {
+    if (!fontName || fontName === figma.mixed || typeof fontName.style !== "string") return null;
+    return fontName.style.toLowerCase().indexOf("italic") !== -1 ? "italic" : null;
+  }
+
   function lineHeightCss(lineHeight) {
     if (!lineHeight || lineHeight === figma.mixed) return "";
     if (lineHeight.unit === "PIXELS") return px(lineHeight.value);
     if (lineHeight.unit === "PERCENT") return String(round(lineHeight.value / 100, 3));
     return "";
+  }
+
+  function letterSpacingCss(letterSpacing) {
+    if (!letterSpacing || letterSpacing === figma.mixed || typeof letterSpacing.value !== "number") return "";
+    if (letterSpacing.unit === "PERCENT") return String(round(letterSpacing.value / 100, 4)) + "em";
+    return px(letterSpacing.value);
+  }
+
+  function textAlignCss(value) {
+    if (value === "CENTER") return "center";
+    if (value === "RIGHT") return "right";
+    if (value === "JUSTIFIED") return "justify";
+    return value === "LEFT" ? "left" : null;
+  }
+
+  function textCaseCss(value) {
+    if (value === "UPPER") return "uppercase";
+    if (value === "LOWER") return "lowercase";
+    if (value === "TITLE") return "capitalize";
+    return null;
   }
 
   function rgbaToCss(color, opacity) {

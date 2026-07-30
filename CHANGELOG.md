@@ -14,5 +14,9 @@
 - Adds Assets tab rename workflow with Save and Run regeneration for Copy Code, Copy CSS, Copy JS, ZIP, manifest, and report.
 - Supports SVG-forcing layer names such as `home_solution.svg`, `logo.svg`, `Logo [svg]`, `Logo #svg`, and `Logo export=svg`.
 - Emits image/PNG shadows on the Figma layer wrapper, keeps inner image assets shadow-free, and outputs markup in Figma layer panel order with `z-index` preserving the visual stack.
+- Fixes layer stack direction so top layer-panel children keep higher `z-index` and bottom/background layers stay behind.
+- Preserves static layer rotation and Figma text weight/style/alignment/letter-spacing/line-height while still inheriting Shopify theme font family.
+- Packages shared theme assets at `assets/motion-figma-gsap-runtime.css` and `assets/motion-figma-gsap-runtime.js`.
+- Groups repeated generated CSS declarations across similar layers to reduce Copy Code noise.
 - Preserves raw prototype reactions in the conversion report.
 - Adds onboarding, copy/paste Shopify guide, privacy note, marketplace listing copy, icon, cover, and validation smoke test.

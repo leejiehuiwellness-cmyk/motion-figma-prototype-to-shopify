@@ -38,6 +38,10 @@
 - Scroll animation settings are now compiled into each viewport motion JSON, with Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, and Pin Sequence runtime behavior.
 - Exported assets now record `defaultFilename` and user-facing `shopifyFilename`. The Assets tab Save and Run flow regenerates Copy Code, Copy CSS, Copy JS, ZIP, manifest, and report with renamed files.
 - SVG forcing supports clean filename layers such as `home_solution.svg`; image/PNG shadows are emitted on the Figma layer wrapper, not the inner file asset, and generated markup follows Figma layer panel order with CSS `z-index` preserving the visual stack.
+- Layer stack direction now keeps earlier/top Figma children at higher `z-index`, preventing lower/background artwork from moving above foreground text or icons.
+- Static layer rotation and Figma text weight/style/alignment/letter-spacing/line-height are emitted in CSS while font family still inherits from the Shopify theme.
+- ZIP exports include `assets/motion-figma-gsap-runtime.css` and `assets/motion-figma-gsap-runtime.js`; Copy Code mode inlines the same runtime/base CSS.
+- Repeated generated CSS declarations are grouped across similar layers to reduce duplicate Copy Code output.
 - Generated Copy Code mode embeds CSS in `{% stylesheet %}` and JavaScript in a regular `<script>` tag inside the Liquid section. The optional `assets/*.css` and `assets/*.js` files are still packaged as developer copies, but the default Liquid does not load them with `asset_url`, preventing double loading.
 - Generated text inherits Shopify theme font variables by default without adding extra theme-style settings to the section schema.
 - Asset export now deduplicates by image hash or vector node ID, records every `usedBy` node, and writes failed exports into the asset manifest with warnings.

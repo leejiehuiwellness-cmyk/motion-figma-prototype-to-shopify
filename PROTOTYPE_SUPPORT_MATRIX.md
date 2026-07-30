@@ -112,6 +112,8 @@ Renamed assets are stored in the export manifest with both `defaultFilename` and
 
 PNG/image file assets keep `box-shadow: none`; Figma effects such as drop shadow are emitted on the Figma layer wrapper. Generated markup follows Figma layer panel order, while CSS `z-index` preserves the visual stack.
 
+Every ZIP export includes shared theme assets at `assets/motion-figma-gsap-runtime.css` and `assets/motion-figma-gsap-runtime.js`. Copy Code mode includes the same runtime/base CSS inline. Repeated CSS declarations are grouped across similar generated layers to avoid rewriting identical text/image style properties.
+
 ## Design Rules for Reliable Export
 
 1. Use one clean top-level frame, component, instance, or variant for the Shopify section.

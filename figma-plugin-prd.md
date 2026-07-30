@@ -235,6 +235,8 @@ The plugin must:
 - Allow users to rename exported image/SVG assets and regenerate Copy Code, Copy CSS, Copy JS, ZIP, manifest, and report from the renamed Shopify filenames.
 - Force SVG export for layers named with clean SVG filenames such as `home_solution.svg`, or formats such as `logo.svg`, `Logo [svg]`, `Logo #svg`, or `Logo export=svg` when Figma can export that layer as SVG.
 - Apply PNG/image shadows from the Figma layer effects on the generated layer wrapper, not from the inner file asset.
+- Package shared Shopify theme assets at `assets/motion-figma-gsap-runtime.css` and `assets/motion-figma-gsap-runtime.js`, while Copy Code mode inlines the same runtime/base CSS.
+- Group repeated CSS declarations across similar generated layers so common text/image style properties are emitted once.
 - Deduplicate identical assets where possible.
 - Preserve alt text candidates from layer names.
 - Generate asset references using Shopify Liquid asset filters.
@@ -565,6 +567,8 @@ type ShopifyExportModel = {
 - Given a prototype route that loops between variants/components/frames, when exported, then the Motion tab, manifest, and report show the loop.
 - Given GSAP already exists on the Shopify theme, when Smart Animate matched layers play, then Motion uses GSAP timeline playback with a no-dependency fallback.
 - Given image layer drop shadows in Figma, when exported, then the shadow is emitted on the generated layer wrapper and the inner image file asset remains shadow-free.
+- Given repeated text/image styles across multiple layers, when exported, then common CSS properties are grouped and each layer keeps only its unique position, size, rotation, and z-index declarations.
+- Given a ZIP export, when generated, then `assets/motion-figma-gsap-runtime.css` and `assets/motion-figma-gsap-runtime.js` are included and listed in manifest/report files.
 - Given an unsupported drag interaction, when exported, then the plugin does not crash and the report lists the unsupported interaction.
 - Given reduced motion enabled in the browser, when the section loads, then non-essential motion is skipped or duration is reduced to zero.
 

@@ -40,6 +40,15 @@ Responsive asset filenames include the frame mode and language label, for exampl
 
 If you renamed assets in the plugin, upload the renamed files shown in the Assets tab or exported manifest. Copy Code, Copy CSS, Copy JS, and Download ZIP all update after Save and Run.
 
+The ZIP also includes shared theme runtime assets:
+
+```text
+assets/motion-figma-gsap-runtime.css
+assets/motion-figma-gsap-runtime.js
+```
+
+Copy Code mode already includes this runtime code inline. External code mode references the shared runtime assets from Shopify theme assets.
+
 11. Delete the starter code Shopify creates.
 12. Paste the full Liquid copied from the plugin.
 13. Click Save.
@@ -88,6 +97,8 @@ After saving, Shopify should render:
 - Motion tab, manifest, and report show prototype routes and loops before you paste the section.
 - Figma layer order is preserved in markup, while CSS `z-index` keeps the visual stack correct.
 - PNG/image shadows come from the Figma layer wrapper, not from the inner PNG file.
+- CSS combines repeated properties across similar layers, and each layer keeps its own position, size, rotation, and z-index.
+- Static Figma rotation and text weight/style/alignment/letter-spacing are preserved while the font family still inherits from Shopify.
 - Selected scroll animation mode: Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, or Pin Sequence.
 
 ## F. Common Fixes

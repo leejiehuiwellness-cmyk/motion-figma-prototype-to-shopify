@@ -1,0 +1,28 @@
+/* Motion: Figma Prototype to Shopify shared theme asset.
+   The plugin also inlines this CSS in Copy Code mode and packages it in every ZIP export. */
+[data-motion-figma-prototype-to-shopify],
+[data-motion-figma-prototype-to-shopify] *,
+[data-motion-figma-prototype-to-shopify] *::before,
+[data-motion-figma-prototype-to-shopify] *::after { box-sizing: border-box; }
+
+[data-motion-figma-prototype-to-shopify] { display: block; }
+[data-motion-figma-prototype-to-shopify] .fts-node { min-width: 0; transform-origin: center center; backface-visibility: hidden; }
+[data-motion-figma-prototype-to-shopify] .fts-node__asset { box-shadow: none; filter: none; }
+[data-motion-figma-prototype-to-shopify] img { display: block; width: 100%; height: 100%; object-fit: cover; }
+[data-motion-figma-prototype-to-shopify] a { color: inherit; text-decoration: none; }
+[data-motion-figma-prototype-to-shopify] button { font: inherit; color: inherit; cursor: pointer; border: 0; background: transparent; }
+
+[data-motion-figma-prototype-to-shopify][data-fts-scroll-mode="pin-sequence"].is-fts-pinned-fallback {
+  min-height: max(var(--fts-pin-distance, 1600px), 100vh);
+}
+
+[data-motion-figma-prototype-to-shopify][data-fts-scroll-mode="pin-sequence"].is-fts-pinned-fallback .fts-stage {
+  position: sticky;
+  top: 0;
+}
+
+.fts-overlay[hidden] { display: none; }
+.fts-overlay { position: fixed; inset: 0; z-index: 2147483000; display: grid; place-items: center; opacity: 0; pointer-events: none; transition: opacity 220ms ease; }
+.fts-overlay.is-open { opacity: 1; pointer-events: auto; }
+.fts-overlay__backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.4); }
+.fts-overlay-panel { position: relative; z-index: 1; }

@@ -28,7 +28,9 @@ const requiredFiles = [
   "docs/assets/site.css",
   "docs/assets/site.js",
   "docs/assets/icon.png",
-  "docs/assets/cover.png"
+  "docs/assets/cover.png",
+  "assets/motion-figma-gsap-runtime.css",
+  "assets/motion-figma-gsap-runtime.js"
 ];
 
 for (const file of requiredFiles) {
@@ -110,7 +112,8 @@ for (const script of scripts) {
   "Pin Sequence",
   "Logo [svg]",
   "home_solution.svg",
-  "Prototype route"
+  "Prototype route",
+  "assets/motion-figma-gsap-runtime.js"
 ].forEach((needle) => {
   assert(ui.includes(needle), `ui.html missing ${needle}`);
 });
@@ -127,7 +130,8 @@ const onboarding = read("ONBOARDING.md");
   "Copy Code",
   "Shopify Admin",
   "home_solution.svg",
-  "prototype route"
+  "prototype route",
+  "assets/motion-figma-gsap-runtime.js"
 ].forEach((needle) => {
   assert(onboarding.includes(needle), `ONBOARDING.md missing ${needle}`);
 });
@@ -140,7 +144,8 @@ const marketplaceCopy = read("FIGMA_MARKETPLACE_COPY_READY.md");
   "cover.png",
   "jiehui02@gmail.com",
   "home_solution.svg",
-  "prototype route/loop detection"
+  "prototype route/loop detection",
+  "assets/motion-figma-gsap-runtime.js"
 ].forEach((needle) => {
   assert(marketplaceCopy.includes(needle), `FIGMA_MARKETPLACE_COPY_READY.md missing ${needle}`);
 });
@@ -157,7 +162,8 @@ const supportMatrix = read("PROTOTYPE_SUPPORT_MATRIX.md");
   "Pin Sequence",
   "Logo [svg]",
   "home_solution.svg",
-  "Prototype Route Detection"
+  "Prototype Route Detection",
+  "assets/motion-figma-gsap-runtime.js"
 ].forEach((needle) => {
   assert(supportMatrix.includes(needle), `PROTOTYPE_SUPPORT_MATRIX.md missing ${needle}`);
 });
@@ -183,6 +189,7 @@ const docsHome = read("docs/index.html");
   "Pin Sequence",
   "Prototype routes",
   "home_solution.svg",
+  "assets/motion-figma-gsap-runtime.js",
   "Download source ZIP"
 ].forEach((needle) => {
   assert(docsHome.includes(needle), `docs/index.html missing ${needle}`);
@@ -203,13 +210,18 @@ const exportedReport = runtimeResult.exportMessage.files.find((file) => /report\
 assert(exportedReport, "Runtime export missing conversion report");
 const exportedCss = runtimeResult.exportMessage.files.find((file) => /^assets\/.*\.css$/.test(file.path));
 const exportedJs = runtimeResult.exportMessage.files.find((file) => /^assets\/.*\.js$/.test(file.path));
+const exportedSharedJs = runtimeResult.exportMessage.files.find((file) => file.path === "assets/motion-figma-gsap-runtime.js");
+const exportedSharedCss = runtimeResult.exportMessage.files.find((file) => file.path === "assets/motion-figma-gsap-runtime.css");
 const exportedManifest = runtimeResult.exportMessage.files.find((file) => /manifest\.json$/.test(file.path));
 const exportedReportMd = runtimeResult.exportMessage.files.find((file) => /export-report\.md$/.test(file.path));
 assert(exportedCss, "Runtime export missing optional CSS copy");
 assert(exportedJs, "Runtime export missing optional JS copy");
+assert(exportedSharedJs, "Runtime export missing shared runtime JS asset");
+assert(exportedSharedCss, "Runtime export missing shared runtime CSS asset");
 assert(exportedManifest, "Runtime export missing export manifest");
 assert(exportedReportMd, "Runtime export missing Markdown export report");
 new vm.Script(exportedJs.content);
+new vm.Script(exportedSharedJs.content);
 const parsedReport = JSON.parse(exportedReport.content);
 const parsedManifest = JSON.parse(exportedManifest.content);
 assert(parsedManifest.codeMode === "inline", "Default export should use Copy Code inline mode");
@@ -233,6 +245,8 @@ assert(exportedLiquid.content.includes("\"name\": \"Mock Product Hero\""), "Sche
   "fts-stage",
   "data-fts-scroll-mode=\"enter-once\"",
   "\"scrollAnimation\":{\"mode\":\"enter-once\"",
+  "Shared theme asset: assets/motion-figma-gsap-runtime.css",
+  "Shared theme asset: assets/motion-figma-gsap-runtime.js",
   "fts-variant is-active",
   "data-motion-figma-prototype-to-shopify"
 ].forEach((needle) => {
@@ -252,6 +266,7 @@ assert(exportedCss.content.includes("margin-left: calc(50% - 50vw)"), "Generated
 assert(exportedCss.content.includes("is-fts-pinned-fallback"), "Generated CSS should include no-GSAP pin sequence fallback");
 assert(exportedCss.content.includes(".fts-node__asset { box-shadow: none; filter: none; }"), "Inner image assets should not receive the layer box-shadow");
 assert(/z-index:\s*\d+;/.test(exportedCss.content), "Generated CSS should preserve visual stack with z-index while markup follows layer order");
+assert(exportedCss.content.includes("font-weight: 700;"), "Generated CSS should preserve Figma text font weight while inheriting Shopify font family");
 assert(!exportedCss.content.includes("font-family: Inter"), "Generated CSS should not hard-code the Figma font family");
 assert(exportedJs.content.includes("function changeVariant"), "Optional JS copy missing real variant switching");
 assert(exportedJs.content.includes("scheduleAfterTimeoutsForState"), "Runtime should schedule AFTER_TIMEOUT from the active state only");
@@ -265,10 +280,14 @@ assert(exportedJs.content.includes("playPreparedDiffsWithGsap"), "Runtime should
 assert(exportedJs.content.includes("gsap.timeline"), "Runtime should include GSAP timeline enhancement");
 assert(exportedJs.content.includes("muteSourceDiffs"), "Runtime should hide matched source layers to avoid frame-by-frame ghosting");
 assert(exportedJs.content.includes("window.gsap"), "Runtime should support optional GSAP enhancement when the theme already loads GSAP");
+assert(exportedSharedJs.content.includes("function changeVariant"), "Shared runtime JS asset should contain the full generated runtime");
+assert(exportedSharedCss.content.includes("[data-motion-figma-prototype-to-shopify] .fts-node__asset"), "Shared runtime CSS asset should contain base asset rules");
 assert(!exportedJs.content.includes("interaction.trigger === 'ON_CLICK'"), "Runtime should not discard Figma timed interactions for reduced-motion shortcuts");
 assert(!exportedJs.content.includes("root.style.opacity = '0.94'"), "Runtime must not fake dissolve with root opacity");
 assert(parsedManifest.interactions.some((item) => item.actions.some((action) => (action.diffs || []).some((diff) => diff.destinationNodeId && typeof diff.fromScaleX === "number"))), "Smart Animate diffs should include destination-layer start values");
 assert(parsedManifest.routes?.edges?.length > 0, "Manifest should include prototype route edges");
+assert(parsedManifest.files.includes("assets/motion-figma-gsap-runtime.css"), "Manifest should include shared runtime CSS asset");
+assert(parsedManifest.files.includes("assets/motion-figma-gsap-runtime.js"), "Manifest should include shared runtime JS asset");
 assert(parsedManifest.scrollAnimation?.mode === "enter-once", "Manifest should include selected scroll animation mode");
 assert(parsedReport.scrollAnimation?.mode === "enter-once", "Report should include selected scroll animation mode");
 
@@ -681,6 +700,7 @@ function makeVariant(id, name, x, destinationId, triggerType, delaySeconds) {
     fills: [{ type: "SOLID", color: { r: 0.02, g: 0.02, b: 0.02 }, opacity: 1, visible: true }]
   });
   const image = node(id + ":image", "Hero image", "RECTANGLE", x + 24, 72, 96, 72, {
+    rotation: -4,
     fills: [{ type: "IMAGE", imageHash: "shared-image-hash", scaleMode: "FILL", visible: true }]
   });
   const icon = node(id + ":icon", "Arrow icon", "VECTOR", x + 136, 82, 36, 36, {
@@ -754,6 +774,9 @@ function assertComponentSetExport(exportMessage, selectedType) {
   assert(css.content.includes("max-width: none"), "Component Set stage should not cap at Figma variant width");
   assert(css.content.includes("is-fts-pinned-fallback"), "Component Set CSS should include pin sequence fallback styles");
   assert(css.content.includes(".fts-variant {"), "CSS missing variant stacking");
+  assert(cssZIndex(css.content, ".fts-mock-variant-set .n-10_2_title") > cssZIndex(css.content, ".fts-mock-variant-set .n-10_2_image"), "Earlier Figma child layers should keep higher z-index than lower/background layers");
+  assert(css.content.includes(".fts-mock-variant-set .n-10_2_title,\n.fts-mock-variant-set .n-10_3_title"), "Repeated text style declarations should be grouped across similar layers");
+  assert(css.content.includes("transform: rotate(-4deg);"), "Generated CSS should preserve static Figma layer rotation");
   assert(js.content.includes("function changeVariant"), "Runtime missing changeVariant");
   assert(js.content.includes("scheduleAfterTimeoutsForState"), "Runtime missing state-scoped AFTER_TIMEOUT scheduling");
   assert(js.content.includes("setupScrollAnimation"), "Runtime missing scroll animation setup");
@@ -765,6 +788,8 @@ function assertComponentSetExport(exportMessage, selectedType) {
   assert(js.content.includes("shopify:section:unload"), "Runtime missing Shopify unload lifecycle");
   assert(manifest.states.length === 4, "Manifest should include all four variants");
   assert(manifest.scrollAnimation?.mode === "enter-once", "Component Set manifest should include scroll animation mode");
+  assert(manifest.files.includes("assets/motion-figma-gsap-runtime.css"), "Component Set manifest should include shared runtime CSS");
+  assert(manifest.files.includes("assets/motion-figma-gsap-runtime.js"), "Component Set manifest should include shared runtime JS");
   assert(manifest.interactions.length >= 4, "Manifest should include recursive/circular prototype chain interactions");
   assert(manifest.interactions.some((item) => item.delayMs === 1000), "AFTER_TIMEOUT delay should be stored in milliseconds");
   assert(manifest.interactions.some((item) => item.actions.some((action) => action.transition?.durationMs === 2000)), "Figma transition duration should be stored in milliseconds");
@@ -848,6 +873,15 @@ function assert(condition, message) {
   if (!condition) {
     throw new Error(message);
   }
+}
+
+function cssZIndex(css, selector) {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = css.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`, "m"));
+  assert(match, `Missing CSS rule for ${selector}`);
+  const z = match[1].match(/z-index:\s*(\d+);/);
+  assert(z, `Missing z-index for ${selector}`);
+  return Number(z[1]);
 }
 
 function assertPngDimensions(path, width, height) {
