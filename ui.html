@@ -449,7 +449,7 @@
         <h2>Prototype motion</h2>
         <div id="motionTable"></div>
         <div class="notice">
-          Motion reads Figma prototype triggers, actions, destinations, transitions, easing, duration, overlays, and Smart Animate-like matching layer diffs. The Animation mode setting controls Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, or Pin Sequence behavior in the generated Shopify runtime.
+          Motion reads Figma prototype triggers, actions, destinations, transitions, easing, duration, overlays, prototype routes, detected loops, and Smart Animate-like matching layer diffs. The Animation mode setting controls Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, or Pin Sequence behavior in the generated Shopify runtime.
         </div>
       </div>
 
@@ -460,6 +460,7 @@
           <li>Select the desktop frame/section and click <strong>Set Desktop</strong>. Optionally select the mobile frame/section and click <strong>Set Mobile</strong>. If Desktop is not set, Motion uses the current selection as desktop.</li>
           <li>If you select a child layer, Motion exports the nearest supported ancestor as the Shopify section boundary.</li>
           <li>For Shopify dynamic content, rename layers with data names such as <code>product.title</code>, <code>product.price</code>, <code>product.image</code>, <code>collection.grid</code>, <code>menu.main</code>, and <code>cart.count</code>.</li>
+          <li>For SVG asset export, name the layer with a clean SVG filename such as <code>home_solution.svg</code>.</li>
           <li>Add prototype interactions in Figma Prototype mode. Supported v1 interactions include click, hover, press, mouse enter/leave, mouse down/up, after delay, navigate, swap, change-to, open overlay, back, close, and URL.</li>
           <li>Choose Animation mode: Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, or Pin Sequence.</li>
           <li>Run this plugin, review warnings, then click <strong>Generate export</strong>.</li>
@@ -744,13 +745,34 @@
 
     function renderMotion() {
       var interactions = state.summary && state.summary.interactions ? state.summary.interactions : [];
-      if (!interactions.length) {
+      var routes = state.summary && state.summary.routes ? state.summary.routes : { edges: [], loops: [] };
+      var html = [];
+      if ((!interactions.length) && (!routes.edges || !routes.edges.length)) {
         motionEl.innerHTML = '<div class="notice">No supported prototype interactions detected.</div>';
         return;
       }
-      motionEl.innerHTML = table(["Hotspot", "Trigger", "Actions"], interactions.map(function (item) {
-        return [item.triggerNode, item.trigger, item.actions.join(", ")];
-      }));
+      if (routes.loops && routes.loops.length) {
+        html.push('<div class="notice warn">Prototype loop detected: ' + escapeHtml(routes.loops.map(function (loop) {
+          return (loop.viewport ? loop.viewport + ": " : "") + loop.names.join(" -> ");
+        }).join(" | ")) + '</div>');
+      }
+      if (routes.edges && routes.edges.length) {
+        html.push('<h3>Prototype route</h3>');
+        html.push(table(["From", "Trigger", "To"], routes.edges.map(function (edge) {
+          return [
+            (edge.viewport ? edge.viewport + ": " : "") + edge.fromName,
+            edge.trigger + (edge.delayMs ? " +" + edge.delayMs + "ms" : ""),
+            edge.toName
+          ];
+        })));
+      }
+      if (interactions.length) {
+        html.push('<h3>Interactions</h3>');
+        html.push(table(["Hotspot", "Trigger", "Actions"], interactions.map(function (item) {
+          return [item.triggerNode, item.trigger, item.actions.join(", ")];
+        })));
+      }
+      motionEl.innerHTML = html.join("");
     }
 
     function renderCopyDefault() {

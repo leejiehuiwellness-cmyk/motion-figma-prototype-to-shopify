@@ -200,7 +200,8 @@
       generatedAt: new Date().toISOString(),
       scrollAnimation: settings.scrollAnimation,
       stateOrder: flatten(viewports.map(function (viewport) { return viewport.motion.stateOrder || []; })),
-      interactions: flatten(viewports.map(function (viewport) { return viewport.motion.interactions; }))
+      interactions: flatten(viewports.map(function (viewport) { return viewport.motion.interactions; })),
+      routes: mergeMotionRoutes(viewports)
     };
     var selectionInfo = primaryViewport.selection;
     var rootModel = primaryViewport.root;
@@ -251,6 +252,7 @@
       warnings: warnings,
       assets: shared.assetManifest.map(assetSummary),
       bindings: bindings,
+      routes: motion.routes,
       interactions: motion.interactions.map(function (item) {
         return {
           triggerNode: item.triggerNodeName,
@@ -416,6 +418,29 @@
     };
   }
 
+  function mergeMotionRoutes(viewports) {
+    var edges = [];
+    var loops = [];
+    var seenLoops = {};
+    (viewports || []).forEach(function (viewport) {
+      var routes = viewport.motion && viewport.motion.routes ? viewport.motion.routes : {};
+      (routes.edges || []).forEach(function (edge) {
+        edges.push(Object.assign({ viewport: viewport.key }, edge));
+      });
+      (routes.loops || []).forEach(function (loop) {
+        var key = viewport.key + ":" + (loop.ids || []).join(">");
+        if (seenLoops[key]) return;
+        seenLoops[key] = true;
+        loops.push(Object.assign({ viewport: viewport.key }, loop));
+      });
+    });
+    return {
+      edges: edges,
+      loops: loops,
+      hasLoop: loops.length > 0
+    };
+  }
+
   function flatten(groups) {
     var out = [];
     groups.forEach(function (group) {
@@ -555,6 +580,9 @@
       path: path.map(safeName),
       pathKey: path.slice(1).map(normalizePathPart).join("/"),
       className: "n-" + cleanNodeId(node.id),
+      layerIndex: 0,
+      layerPanelIndex: 0,
+      zIndex: 0,
       x: bounds.x,
       y: bounds.y,
       width: bounds.width,
@@ -590,7 +618,12 @@
         var child = node.children[i];
         var childPath = path.concat([child.name || child.type + " " + i]);
         var childModel = await serializeNode(child, model, root, ctx, depth + 1, childPath);
-        if (childModel) model.children.push(childModel);
+        if (childModel) {
+          childModel.layerIndex = i;
+          childModel.layerPanelIndex = node.children.length - i;
+          childModel.zIndex = i + 1;
+          model.children.push(childModel);
+        }
       }
     }
 
@@ -831,11 +864,114 @@
         });
       });
     });
+    var routes = buildPrototypeRoutes(interactions, states);
     return {
       version: 1,
       generatedAt: new Date().toISOString(),
-      interactions: interactions
+      interactions: interactions,
+      routes: routes
     };
+  }
+
+  function buildPrototypeRoutes(interactions, states) {
+    var stateById = {};
+    states.forEach(function (state) {
+      stateById[state.id] = state;
+    });
+
+    var edges = [];
+    interactions.forEach(function (interaction) {
+      (interaction.actions || []).forEach(function (action) {
+        if (!action || action.kind !== "change-variant") return;
+        var fromState = stateById[interaction.sourceStateId] || null;
+        var toState = stateById[action.destinationStateId] || null;
+        edges.push({
+          fromId: interaction.sourceStateId,
+          fromFigmaId: interaction.sourceNodeId,
+          fromName: fromState ? fromState.name : interaction.sourceStateId,
+          toId: action.destinationStateId,
+          toFigmaId: action.destinationNodeId,
+          toName: toState ? toState.name : action.destinationName,
+          trigger: interaction.trigger,
+          triggerNodeId: interaction.triggerNodeId,
+          triggerNodeName: interaction.triggerNodeName,
+          delayMs: interaction.delayMs || 0,
+          transitionType: action.transition && action.transition.type || "UNKNOWN",
+          durationMs: action.transition && action.transition.durationMs || 0
+        });
+      });
+    });
+
+    var loops = detectPrototypeLoops(edges, stateById);
+    return {
+      edges: edges,
+      loops: loops,
+      hasLoop: loops.length > 0
+    };
+  }
+
+  function detectPrototypeLoops(edges, stateById) {
+    var adjacency = {};
+    edges.forEach(function (edge) {
+      if (!edge.fromId || !edge.toId) return;
+      if (!adjacency[edge.fromId]) adjacency[edge.fromId] = [];
+      adjacency[edge.fromId].push(edge);
+    });
+
+    var loops = [];
+    var seen = {};
+    Object.keys(adjacency).forEach(function (startId) {
+      visitPrototypeRoute(startId, [], {}, adjacency, stateById, loops, seen, 0);
+    });
+    return loops;
+  }
+
+  function visitPrototypeRoute(stateId, path, inPath, adjacency, stateById, loops, seen, depth) {
+    if (depth > 40) return;
+    var nextEdges = adjacency[stateId] || [];
+    nextEdges.forEach(function (edge) {
+      var nextId = edge.toId;
+      var nextPath = path.concat([edge]);
+      if (inPath[nextId]) {
+        var startIndex = -1;
+        for (var i = 0; i < path.length; i += 1) {
+          if (path[i].fromId === nextId) {
+            startIndex = i;
+            break;
+          }
+        }
+        var cycleEdges = startIndex >= 0 ? path.slice(startIndex).concat([edge]) : [edge];
+        var ids = cycleEdges.map(function (item) { return item.fromId; }).concat([nextId]);
+        var key = normalizeLoopKey(ids);
+        if (!seen[key]) {
+          seen[key] = true;
+          loops.push({
+            ids: ids,
+            names: ids.map(function (id) { return stateById[id] ? stateById[id].name : id; }),
+            triggers: cycleEdges.map(function (item) { return item.trigger; }),
+            edges: cycleEdges
+          });
+        }
+        return;
+      }
+      if (!adjacency[nextId]) return;
+      var nextInPath = Object.assign({}, inPath);
+      nextInPath[stateId] = true;
+      visitPrototypeRoute(nextId, nextPath, nextInPath, adjacency, stateById, loops, seen, depth + 1);
+    });
+  }
+
+  function normalizeLoopKey(ids) {
+    if (!ids || !ids.length) return "";
+    var cycle = ids.slice(0, -1);
+    if (!cycle.length) return ids.join(">");
+    var best = null;
+    for (var i = 0; i < cycle.length; i += 1) {
+      var rotated = cycle.slice(i).concat(cycle.slice(0, i));
+      var value = rotated.join(">");
+      if (best === null || value < best) best = value;
+    }
+    return best;
   }
 
   function findDestinationModel(destinationId, stateByFigmaId, destinations) {
@@ -989,7 +1125,7 @@
           return null;
         }
         var ext = detectImageExtension(bytes);
-        var defaultImageFilename = normalizeDefaultAssetFilename((ctx.assetFilePrefix || ctx.sectionType) + "-" + slug(model.name, "image") + "-" + cleanNodeId(model.figmaId) + "-" + shortHash(imageHash) + "." + ext, ext);
+        var defaultImageFilename = normalizeDefaultAssetFilename((ctx.assetFilePrefix || ctx.sectionType) + "-" + assetLayerSlug(model.name, "image") + "-" + cleanNodeId(model.figmaId) + "-" + shortHash(imageHash) + "." + ext, ext);
         var imageFilename = resolveAssetFilename(ctx, defaultImageFilename, ext);
         var asset = {
           path: "assets/" + imageFilename,
@@ -1036,7 +1172,7 @@
       if (!("exportAsync" in node)) throw new Error("Layer does not support SVG export.");
       var svg = await node.exportAsync({ format: "SVG_STRING" });
       if (typeof svg !== "string") throw new Error("Figma did not return SVG text for this layer.");
-      var defaultSvgFilename = normalizeDefaultAssetFilename((ctx.assetFilePrefix || ctx.sectionType) + "-" + slug(model.name, "icon") + "-" + cleanNodeId(model.figmaId) + ".svg", "svg");
+      var defaultSvgFilename = normalizeDefaultAssetFilename((ctx.assetFilePrefix || ctx.sectionType) + "-" + assetLayerSlug(model.name, "icon") + "-" + cleanNodeId(model.figmaId) + ".svg", "svg");
       var svgFilename = resolveAssetFilename(ctx, defaultSvgFilename, "svg");
       var svgAsset = {
         path: "assets/" + svgFilename,
@@ -1108,7 +1244,7 @@
   function detectAssetReference(node, model, ctx) {
     var imageHash = firstImageHash(node);
     if (shouldForceSvgExport(node, model)) {
-      var forcedSvgFilename = normalizeDefaultAssetFilename((ctx.assetFilePrefix || ctx.sectionType) + "-" + slug(model.name, "icon") + "-" + cleanNodeId(model.figmaId) + ".svg", "svg");
+      var forcedSvgFilename = normalizeDefaultAssetFilename((ctx.assetFilePrefix || ctx.sectionType) + "-" + assetLayerSlug(model.name, "icon") + "-" + cleanNodeId(model.figmaId) + ".svg", "svg");
       forcedSvgFilename = resolveAssetFilename(ctx, forcedSvgFilename, "svg");
       return {
         path: "assets/" + forcedSvgFilename,
@@ -1117,7 +1253,7 @@
       };
     }
     if (imageHash) {
-      var imageFilename = normalizeDefaultAssetFilename((ctx.assetFilePrefix || ctx.sectionType) + "-" + slug(model.name, "image") + "-" + cleanNodeId(model.figmaId) + "-" + shortHash(imageHash) + ".png", "png");
+      var imageFilename = normalizeDefaultAssetFilename((ctx.assetFilePrefix || ctx.sectionType) + "-" + assetLayerSlug(model.name, "image") + "-" + cleanNodeId(model.figmaId) + "-" + shortHash(imageHash) + ".png", "png");
       imageFilename = resolveAssetFilename(ctx, imageFilename, "png");
       return {
         path: "assets/" + imageFilename,
@@ -1126,7 +1262,7 @@
       };
     }
     if (VECTOR_TYPES[node.type]) {
-      var svgFilename = normalizeDefaultAssetFilename((ctx.assetFilePrefix || ctx.sectionType) + "-" + slug(model.name, "icon") + "-" + cleanNodeId(model.figmaId) + ".svg", "svg");
+      var svgFilename = normalizeDefaultAssetFilename((ctx.assetFilePrefix || ctx.sectionType) + "-" + assetLayerSlug(model.name, "icon") + "-" + cleanNodeId(model.figmaId) + ".svg", "svg");
       svgFilename = resolveAssetFilename(ctx, svgFilename, "svg");
       return {
         path: "assets/" + svgFilename,
@@ -1401,20 +1537,21 @@
     }
 
     if (node.asset && (node.asset.kind === "image" || node.asset.kind === "image-placeholder")) {
-      return "<img src=\"{{ '" + escapeAttr(node.asset.filename) + "' | asset_url }}\" alt=\"" + escapeAttr(readableAlt(node.name)) + "\" loading=\"lazy\">";
+      return "<img class=\"fts-node__asset\" data-fts-asset-img src=\"{{ '" + escapeAttr(node.asset.filename) + "' | asset_url }}\" alt=\"" + escapeAttr(readableAlt(node.name)) + "\" loading=\"lazy\">";
     }
 
     if (node.asset && (node.asset.kind === "svg" || node.asset.kind === "svg-placeholder")) {
-      return "<img src=\"{{ '" + escapeAttr(node.asset.filename) + "' | asset_url }}\" alt=\"" + escapeAttr(readableAlt(node.name)) + "\" loading=\"lazy\">";
+      return "<img class=\"fts-node__asset\" data-fts-asset-img src=\"{{ '" + escapeAttr(node.asset.filename) + "' | asset_url }}\" alt=\"" + escapeAttr(readableAlt(node.name)) + "\" loading=\"lazy\">";
     }
 
     if (node.text && node.text.characters) {
       return escapeHtml(node.text.characters);
     }
 
-    return node.children.map(function (child) {
+    var children = childrenForMarkup(node);
+    return children.map(function (child) {
       return "\n" + renderNode(child, ctx);
-    }).join("") + (node.children.length ? "\n" + spaces(node.depth * 2) : "");
+    }).join("") + (children.length ? "\n" + spaces(node.depth * 2) : "");
   }
 
   function renderCollectionGrid(node, ctx) {
@@ -1475,7 +1612,7 @@
   function renderDynamicLink(node, href, ctx, fallbackLabel) {
     var content = "";
     if (node.children.length) {
-      content = node.children.map(function (child) {
+      content = childrenForMarkup(node).map(function (child) {
         return "\n" + renderNode(child, ctx);
       }).join("") + "\n" + spaces(node.depth * 2);
     } else if (node.text && node.text.characters) {
@@ -1484,6 +1621,12 @@
       content = fallbackLabel;
     }
     return indent("<a" + renderAttrs(node) + " href=\"" + href + "\">" + content + "</a>", node.depth);
+  }
+
+  function childrenForMarkup(node) {
+    if (!node || !node.children) return [];
+    if (node.layout && node.layout.mode) return node.children;
+    return node.children.slice().reverse();
   }
 
   function renderOverlay(node, classPrefix) {
@@ -1568,6 +1711,7 @@
     lines.push("." + classPrefix + " *, ." + classPrefix + " *::before, ." + classPrefix + " *::after { box-sizing: border-box; }");
     lines.push("." + classPrefix + " .fts-node { transform-origin: top left; backface-visibility: hidden; }");
     lines.push("." + classPrefix + " img { display: block; width: 100%; height: 100%; object-fit: cover; }");
+    lines.push("." + classPrefix + " .fts-node__asset { box-shadow: none; filter: none; }");
     lines.push("." + classPrefix + " a { color: inherit; text-decoration: none; }");
     lines.push("." + classPrefix + " button { font: inherit; color: inherit; cursor: pointer; border: 0; background: transparent; }");
     lines.push("." + classPrefix + " h1, ." + classPrefix + " h2, ." + classPrefix + " h3, ." + classPrefix + " h4, ." + classPrefix + " h5, ." + classPrefix + " h6 {");
@@ -1675,6 +1819,10 @@
       else if (node.width) lines.push("  width: " + px(node.width) + ";");
       if (parent && parent.height) lines.push("  height: " + pct(node.height, parent.height) + ";");
       else if (node.height) lines.push("  min-height: " + px(node.height) + ";");
+    }
+
+    if (node.depth !== 0 && parent && !(parent.layout && parent.layout.mode) && node.zIndex) {
+      lines.push("  z-index: " + Math.max(1, Math.round(node.zIndex)) + ";");
     }
 
     if (node.children.length && node.depth !== 0 && node.layout.mode) {
@@ -1903,6 +2051,39 @@
       "        else el.style.borderRadius = original ? original.borderRadius : '';",
       "      });",
       "    }",
+      "    function playPreparedDiffsWithGsap(prepared, source, sourceFadeDuration, duration, ease, finishStateChange) {",
+      "      if (!prepared.length || !canUseGsap() || typeof window.gsap.timeline !== 'function') return false;",
+      "      var gsap = window.gsap;",
+      "      var timeline = gsap.timeline({ onComplete: finishStateChange });",
+      "      prepared.forEach(function (item) {",
+      "        var diff = item.diff;",
+      "        var reverse = item.reverse;",
+      "        var finalOpacity = reverse ? diff.fromOpacity : diff.toOpacity;",
+      "        var finalBackgroundColor = reverse ? diff.fromBackgroundColor : (diff.toBackgroundColor || diff.backgroundColor);",
+      "        var finalBorderRadius = reverse ? diff.fromBorderRadius : numeric(diff.toBorderRadius, diff.borderRadius);",
+      "        var vars = {",
+      "          x: 0,",
+      "          y: 0,",
+      "          scaleX: 1,",
+      "          scaleY: 1,",
+      "          rotation: 0,",
+      "          duration: Math.max(0, duration) / 1000,",
+      "          ease: toGsapEase(ease),",
+      "          overwrite: 'auto',",
+      "          clearProps: 'transform,opacity,visibility,backgroundColor,borderRadius,willChange'",
+      "        };",
+      "        if (typeof finalOpacity === 'number') vars.autoAlpha = finalOpacity;",
+      "        if (finalBackgroundColor) vars.backgroundColor = finalBackgroundColor;",
+      "        if (typeof finalBorderRadius === 'number') vars.borderRadius = finalBorderRadius;",
+      "        timeline.to(item.el, vars, 0);",
+      "      });",
+      "      if (source) {",
+      "        source.style.pointerEvents = 'none';",
+      "        timeline.to(source, { autoAlpha: 0, duration: Math.max(0, sourceFadeDuration) / 1000, ease: toGsapEase(ease), overwrite: 'auto' }, 0);",
+      "      }",
+      "      trackTween(timeline);",
+      "      return true;",
+      "    }",
       "    function muteSourceDiffs(diffs, reverse) {",
       "      var muted = [];",
       "      (diffs || []).forEach(function (diff) {",
@@ -1993,6 +2174,7 @@
       "        destination.style.visibility = 'visible';",
       "        setStateActive(destination, true);",
       "        destination.getBoundingClientRect();",
+      "        if (playPreparedDiffsWithGsap(prepared, source && source !== destination ? source : null, sourceFadeDuration, duration, ease, finishStateChange)) return;",
       "        playPreparedDiffs(prepared);",
       "        if (source && source !== destination) {",
       "          source.style.transition = 'opacity ' + sourceFadeDuration + 'ms ' + ease + ', visibility ' + sourceFadeDuration + 'ms ' + ease;",
@@ -2315,6 +2497,7 @@
       assets: input.assetManifest,
       liquidBindings: input.bindings,
       prototypeReactions: collectPrototypeReactions(input.states),
+      prototypeRoutes: input.motion.routes,
       motion: input.motion,
       warnings: input.warnings,
       manualChecklist: [
@@ -2343,6 +2526,7 @@
       stage: input.stage,
       states: input.states.map(stateSummary),
       interactions: input.motion.interactions,
+      routes: input.motion.routes,
       assets: input.assetManifest,
       files: [
         "sections/" + input.sectionType + ".liquid",
@@ -2399,6 +2583,22 @@
       });
     } else {
       lines.push("- No supported interactions compiled.");
+    }
+    lines.push("");
+    lines.push("## Prototype routes");
+    lines.push("");
+    if (input.motion.routes && input.motion.routes.edges && input.motion.routes.edges.length) {
+      input.motion.routes.edges.forEach(function (edge) {
+        lines.push("- `" + edge.fromName + "` -> `" + edge.toName + "` via `" + edge.trigger + "`" + (edge.delayMs ? " after `" + edge.delayMs + "ms`" : "") + ".");
+      });
+      if (input.motion.routes.loops && input.motion.routes.loops.length) {
+        lines.push("");
+        input.motion.routes.loops.forEach(function (loop) {
+          lines.push("- Loop detected: `" + loop.names.join("` -> `") + "`.");
+        });
+      }
+    } else {
+      lines.push("- No variant-to-variant prototype routes detected.");
     }
     lines.push("");
     lines.push("## Warnings");
@@ -2490,6 +2690,19 @@
       "- Click/tap, hover, press, mouse enter/leave, mouse down/up, and after-delay triggers.",
       "- Navigate, swap, overlay, change-to, URL, back, and close actions.",
       "- Dissolve, directional movement, and Smart Animate-style destination-layer diffs for position, scale, rotation, opacity, solid fill color, and corner radius.",
+      "",
+      "## Prototype routes",
+      "",
+      input.motion.routes && input.motion.routes.edges && input.motion.routes.edges.length ? input.motion.routes.edges.map(function (edge) { return "- `" + edge.fromName + "` -> `" + edge.toName + "` via `" + edge.trigger + "`."; }).join("\n") : "- No variant-to-variant prototype routes detected.",
+      input.motion.routes && input.motion.routes.loops && input.motion.routes.loops.length ? input.motion.routes.loops.map(function (loop) { return "- Loop detected: `" + loop.names.join("` -> `") + "`."; }).join("\n") : "",
+      "",
+      "## GSAP enhancement",
+      "",
+      "When the Shopify theme already loads GSAP, Motion uses `gsap.timeline()` for Smart Animate layer playback and falls back to no-dependency JavaScript/CSS when GSAP is unavailable.",
+      "",
+      "## Layer order and asset shadows",
+      "",
+      "Generated markup follows the Figma layer panel order while CSS `z-index` preserves the visual stack. PNG/image box-shadow is applied to the Figma layer wrapper; the inner image asset keeps `box-shadow: none` so shadows come from the layer, not from the file.",
       "",
       "## Warnings",
       "",
@@ -2864,6 +3077,16 @@
 
   function normalizeDefaultAssetFilename(defaultFilename, requiredExt) {
     return sanitizeAssetFilename(defaultFilename, requiredExt, defaultFilename);
+  }
+
+  function assetLayerSlug(name, fallback) {
+    var cleaned = String(name || "")
+      .replace(/\.[a-z0-9]+$/i, "")
+      .replace(/(?:export|format)\s*[:=]\s*svg/ig, "")
+      .replace(/[#\[(]\s*svg\s*[\])]*/ig, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    return slug(cleaned, fallback || "asset");
   }
 
   function reserveAssetFilename(ctx, filename) {

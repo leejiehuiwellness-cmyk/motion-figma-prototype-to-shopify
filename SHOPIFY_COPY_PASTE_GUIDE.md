@@ -17,6 +17,8 @@ For a ready-made smoke test before running the plugin in Figma, use `examples/ex
 9. Open the Copy Code tab.
 10. Click Copy Code.
 
+For SVG export, rename the Figma layer with a clean filename such as `home_solution.svg`. Motion keeps the `.svg` intent but generates a Shopify-safe asset name such as `home-solution`.
+
 ## B. In Shopify Admin
 
 1. Go to Online Store > Themes.
@@ -82,7 +84,10 @@ After saving, Shopify should render:
 - Inline CSS and JavaScript inside the generated Liquid section.
 - Font family, font style, and font weight inherited from the Shopify theme.
 - Supported Figma prototype animation such as click, hover, delay, overlay, and Smart Animate-style diffs.
-- Smoother component/state motion: matched destination layers animate from the source layer position, size, rotation, opacity, color, and radius instead of showing every Figma state as a separate frame.
+- Smoother component/state motion: matched destination layers animate from the source layer position, size, rotation, opacity, color, and radius instead of showing every Figma state as a separate frame. If your Shopify theme already loads GSAP, the generated runtime uses `gsap.timeline()`; otherwise it uses a no-dependency fallback.
+- Motion tab, manifest, and report show prototype routes and loops before you paste the section.
+- Figma layer order is preserved in markup, while CSS `z-index` keeps the visual stack correct.
+- PNG/image shadows come from the Figma layer wrapper, not from the inner PNG file.
 - Selected scroll animation mode: Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, or Pin Sequence.
 
 ## F. Common Fixes
@@ -96,4 +101,7 @@ After saving, Shopify should render:
 | Menu is blank | Choose Main menu in section settings. |
 | Animation does not move | Check `motion-figma-prototype-to-shopify-report.json` for unsupported prototype features. |
 | Animation looks like a frame slideshow | Regenerate with the latest plugin and keep matching source/destination layer names consistent. The latest runtime uses destination-layer Smart Animate playback instead of whole-frame snapshots when safe layer matches are found. |
+| Variant sequence unexpectedly loops | Open the Motion tab or export report and check Prototype routes. Loops are listed explicitly, such as `Variant 3 -> Variant 4 -> Variant 3`. |
+| SVG exported as PNG | Rename the layer to a clean SVG filename such as `home_solution.svg`, then click Save and Run. |
+| Image shadow looks wrong | Regenerate with the latest plugin. The inner image asset has `box-shadow: none`; the Figma layer effect is emitted on the wrapper. |
 | Renamed asset is missing | Click Save and Run after renaming, then upload the regenerated filename from the ZIP `assets/` folder. |

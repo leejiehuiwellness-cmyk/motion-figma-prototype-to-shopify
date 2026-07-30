@@ -84,7 +84,10 @@ for (const script of scripts) {
   "forced-svg",
   "prepareDestinationDiffs",
   "playPreparedDiffs",
+  "playPreparedDiffsWithGsap",
   "muteSourceDiffs",
+  "Prototype routes",
+  "prototypeRoutes",
   "window.gsap",
   "ON_CLICK",
   "ON_HOVER",
@@ -105,7 +108,9 @@ for (const script of scripts) {
   "Infinite Loop",
   "Scroll Scrub",
   "Pin Sequence",
-  "Logo [svg]"
+  "Logo [svg]",
+  "home_solution.svg",
+  "Prototype route"
 ].forEach((needle) => {
   assert(ui.includes(needle), `ui.html missing ${needle}`);
 });
@@ -120,7 +125,9 @@ const onboarding = read("ONBOARDING.md");
   "product.title",
   "collection.grid",
   "Copy Code",
-  "Shopify Admin"
+  "Shopify Admin",
+  "home_solution.svg",
+  "prototype route"
 ].forEach((needle) => {
   assert(onboarding.includes(needle), `ONBOARDING.md missing ${needle}`);
 });
@@ -131,7 +138,9 @@ const marketplaceCopy = read("FIGMA_MARKETPLACE_COPY_READY.md");
   "allowedDomains: [\"none\"]",
   "icon.png",
   "cover.png",
-  "jiehui02@gmail.com"
+  "jiehui02@gmail.com",
+  "home_solution.svg",
+  "prototype route/loop detection"
 ].forEach((needle) => {
   assert(marketplaceCopy.includes(needle), `FIGMA_MARKETPLACE_COPY_READY.md missing ${needle}`);
 });
@@ -146,7 +155,9 @@ const supportMatrix = read("PROTOTYPE_SUPPORT_MATRIX.md");
   "UPDATE_MEDIA_RUNTIME",
   "Smart Animate",
   "Pin Sequence",
-  "Logo [svg]"
+  "Logo [svg]",
+  "home_solution.svg",
+  "Prototype Route Detection"
 ].forEach((needle) => {
   assert(supportMatrix.includes(needle), `PROTOTYPE_SUPPORT_MATRIX.md missing ${needle}`);
 });
@@ -170,6 +181,8 @@ const docsHome = read("docs/index.html");
   "Prototype motion",
   "Save and Run",
   "Pin Sequence",
+  "Prototype routes",
+  "home_solution.svg",
   "Download source ZIP"
 ].forEach((needle) => {
   assert(docsHome.includes(needle), `docs/index.html missing ${needle}`);
@@ -237,6 +250,8 @@ assert(exportedCss.content.includes("width: 100vw"), "Generated CSS should break
 assert(exportedCss.content.includes("max-width: none"), "Generated stage should not cap full-width rendering at the Figma frame width");
 assert(exportedCss.content.includes("margin-left: calc(50% - 50vw)"), "Generated CSS should break out of Shopify page-width containers");
 assert(exportedCss.content.includes("is-fts-pinned-fallback"), "Generated CSS should include no-GSAP pin sequence fallback");
+assert(exportedCss.content.includes(".fts-node__asset { box-shadow: none; filter: none; }"), "Inner image assets should not receive the layer box-shadow");
+assert(/z-index:\s*\d+;/.test(exportedCss.content), "Generated CSS should preserve visual stack with z-index while markup follows layer order");
 assert(!exportedCss.content.includes("font-family: Inter"), "Generated CSS should not hard-code the Figma font family");
 assert(exportedJs.content.includes("function changeVariant"), "Optional JS copy missing real variant switching");
 assert(exportedJs.content.includes("scheduleAfterTimeoutsForState"), "Runtime should schedule AFTER_TIMEOUT from the active state only");
@@ -246,11 +261,14 @@ assert(exportedJs.content.includes("ScrollTrigger.create"), "Runtime should use 
 assert(exportedJs.content.includes("afterTimeoutInteractions.push"), "Runtime should collect state-scoped AFTER_TIMEOUT interactions");
 assert(exportedJs.content.includes("prepareDestinationDiffs"), "Runtime should prepare destination layers for smooth Smart Animate playback");
 assert(exportedJs.content.includes("playPreparedDiffs"), "Runtime should play destination-layer Smart Animate diffs");
+assert(exportedJs.content.includes("playPreparedDiffsWithGsap"), "Runtime should use GSAP timeline for prepared Smart Animate layers when available");
+assert(exportedJs.content.includes("gsap.timeline"), "Runtime should include GSAP timeline enhancement");
 assert(exportedJs.content.includes("muteSourceDiffs"), "Runtime should hide matched source layers to avoid frame-by-frame ghosting");
 assert(exportedJs.content.includes("window.gsap"), "Runtime should support optional GSAP enhancement when the theme already loads GSAP");
 assert(!exportedJs.content.includes("interaction.trigger === 'ON_CLICK'"), "Runtime should not discard Figma timed interactions for reduced-motion shortcuts");
 assert(!exportedJs.content.includes("root.style.opacity = '0.94'"), "Runtime must not fake dissolve with root opacity");
 assert(parsedManifest.interactions.some((item) => item.actions.some((action) => (action.diffs || []).some((diff) => diff.destinationNodeId && typeof diff.fromScaleX === "number"))), "Smart Animate diffs should include destination-layer start values");
+assert(parsedManifest.routes?.edges?.length > 0, "Manifest should include prototype route edges");
 assert(parsedManifest.scrollAnimation?.mode === "enter-once", "Manifest should include selected scroll animation mode");
 assert(parsedReport.scrollAnimation?.mode === "enter-once", "Report should include selected scroll animation mode");
 
@@ -548,9 +566,10 @@ async function runResponsiveFrameSmokeTest(code, ui, extraSettings = {}) {
     fills: [{ type: "IMAGE", imageHash: "responsive-shared-hash", scaleMode: "FILL", visible: true }]
   });
   const mobileOnly = node("21:3", "Mobile badge", "RECTANGLE", 24, 320, 120, 120, {
-    fills: [{ type: "IMAGE", imageHash: "responsive-mobile-only-hash", scaleMode: "FILL", visible: true }]
+    fills: [{ type: "IMAGE", imageHash: "responsive-mobile-only-hash", scaleMode: "FILL", visible: true }],
+    effects: [{ type: "DROP_SHADOW", visible: true, offset: { x: 0, y: 8 }, radius: 24, color: { r: 0, g: 0, b: 0, a: 0.18 } }]
   });
-  const forcedSvg = node("21:4", "Mobile logo [svg]", "RECTANGLE", 180, 320, 120, 72, {
+  const forcedSvg = node("21:4", "home_solution.svg", "RECTANGLE", 180, 320, 120, 72, {
     fills: [{ type: "IMAGE", imageHash: "responsive-logo-hash", scaleMode: "FILL", visible: true }],
     async exportAsync(settings) {
       if (settings?.format === "SVG_STRING") return "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 120 72\"><rect width=\"120\" height=\"72\" fill=\"#26a6a6\"/></svg>";
@@ -750,6 +769,10 @@ function assertComponentSetExport(exportMessage, selectedType) {
   assert(manifest.interactions.some((item) => item.delayMs === 1000), "AFTER_TIMEOUT delay should be stored in milliseconds");
   assert(manifest.interactions.some((item) => item.actions.some((action) => action.transition?.durationMs === 2000)), "Figma transition duration should be stored in milliseconds");
   assert(manifest.interactions.some((item) => item.actions.some((action) => action.destinationNodeId === "10:5")), "Variant chain should include Variant4 destination");
+  assert(manifest.routes?.edges?.length >= 4, "Manifest should expose the compiled prototype route graph");
+  assert(manifest.routes?.hasLoop === true, "Manifest should flag circular variant routes");
+  assert(manifest.routes?.loops?.some((loop) => loop.names.join(" -> ").includes("Property 1=Variant3 -> Property 1=Variant4 -> Property 1=Variant3")), "Manifest should describe the Variant3/Variant4 loop");
+  assert(exportMessage.summary.routes?.hasLoop === true, "Summary should expose circular prototype routes for the Motion tab");
   assert(manifest.assets.some((asset) => asset.status === "exported" && asset.sourceType === "image-fill"), "Image fill asset should be exported");
   assert(manifest.assets.some((asset) => asset.status === "exported" && asset.assetType === "SVG"), "Vector SVG asset should be exported");
   assert(manifest.assets.some((asset) => asset.status === "failed" && asset.failureReason.includes("Mock SVG export failure")), "Failed vector export should be visible in asset manifest");
@@ -761,6 +784,8 @@ function assertComponentSetExport(exportMessage, selectedType) {
     assert(packagedPaths.has(`assets/${filename}`), `Liquid references missing package asset ${filename}`);
   }
   assert(reportMd.content.includes("Property 1=Variant4"), "Markdown report should list Variant4");
+  assert(reportMd.content.includes("Prototype routes"), "Markdown report should include prototype routes");
+  assert(reportMd.content.includes("Loop detected"), "Markdown report should include detected loops");
 }
 
 function assertResponsiveFrameExport(exportMessage) {
@@ -780,6 +805,8 @@ function assertResponsiveFrameExport(exportMessage) {
   assert(css.content.includes(".fts-responsive--mobile { display: none; }"), "Responsive CSS missing mobile default hidden state");
   assert(css.content.includes(".fts-responsive--desktop { display: none; }"), "Responsive CSS missing mobile breakpoint desktop hide");
   assert(css.content.includes(".fts-responsive--mobile { display: block; }"), "Responsive CSS missing mobile breakpoint mobile show");
+  assert(css.content.includes("box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.18);"), "Image layer shadow should be emitted as CSS on the layer wrapper");
+  assert(css.content.includes(".fts-node__asset { box-shadow: none; filter: none; }"), "PNG/SVG file assets should not carry the layer shadow themselves");
   assert(manifest.responsive.length === 2, "Manifest should include desktop and mobile responsive frame summaries");
   assert(manifest.responsive.some((item) => item.key === "desktop" && item.stage.width === 1440), "Manifest missing desktop stage");
   assert(manifest.responsive.some((item) => item.key === "mobile" && item.stage.width === 390), "Manifest missing mobile stage");
@@ -790,7 +817,7 @@ function assertResponsiveFrameExport(exportMessage) {
   const shared = imageAssets.find((asset) => asset.shopifyFilename.startsWith("home-feature-desktop-cn-shared-product-image"));
   assert(shared && shared.usedBy.length === 2, "Shared desktop/mobile image asset should be deduplicated and record both uses");
   assert(shared.defaultFilename === shared.shopifyFilename, "Unrenamed asset should keep default filename in manifest");
-  assert(manifest.assets.some((asset) => asset.status === "exported" && asset.sourceType === "forced-svg" && asset.shopifyFilename.endsWith(".svg")), "Layer name [svg] should force SVG asset export");
+  assert(manifest.assets.some((asset) => asset.status === "exported" && asset.sourceType === "forced-svg" && asset.shopifyFilename.includes("home-solution") && asset.shopifyFilename.endsWith(".svg")), "Layer name home_solution.svg should force a clean SVG asset export");
 }
 
 function assertRenamedResponsiveExport(exportMessage, originalDefaultFilename) {

@@ -93,11 +93,16 @@ The export report includes a `prototypeReactions` array with the raw interaction
 | Scroll Scrub | Supported | Maps scroll progress to the selected frame/component/component-set state order |
 | Pin Sequence | Supported | Pins the section while scroll progress scrubs through the state order; uses GSAP ScrollTrigger when available and a sticky fallback otherwise |
 
+## Prototype Route Detection
+
+Motion builds a route graph from selected frame/component/component-set/variant prototype links and shows it in the Motion tab. Circular routes are supported and reported, for example `Variant 3 -> Variant 4 -> Variant 3`, so loops created by component variants remain visible before copying Shopify code.
+
 ## Asset Naming
 
 | Layer naming format | V1 behavior |
 | --- | --- |
 | Vector layer | Exports as SVG automatically |
+| `home_solution.svg` | Attempts SVG export for that layer and uses a clean `home-solution` filename stem |
 | `logo.svg` | Attempts SVG export for that layer |
 | `Logo [svg]` | Attempts SVG export for that layer |
 | `Logo #svg` | Attempts SVG export for that layer |
@@ -105,11 +110,13 @@ The export report includes a `prototypeReactions` array with the raw interaction
 
 Renamed assets are stored in the export manifest with both `defaultFilename` and `shopifyFilename`. After users click Save and Run, Copy Code, Copy CSS, Copy JS, ZIP files, manifest, and report are regenerated from the renamed `shopifyFilename` values.
 
+PNG/image file assets keep `box-shadow: none`; Figma effects such as drop shadow are emitted on the Figma layer wrapper. Generated markup follows Figma layer panel order, while CSS `z-index` preserves the visual stack.
+
 ## Design Rules for Reliable Export
 
 1. Use one clean top-level frame, component, instance, or variant for the Shopify section.
 2. Designers may select a child layer inside a component; Motion will export the nearest supported component/instance ancestor.
-3. Keep source and destination layer names consistent for Smart Animate. Motion matches by path, layer name, structure, and type so the Shopify playback can move the destination layer smoothly instead of flashing through state screenshots.
+3. Keep source and destination layer names consistent for Smart Animate. Motion matches by path, layer name, structure, and type so the Shopify playback can move the destination layer smoothly instead of flashing through state screenshots. If GSAP is already loaded by the theme, Motion uses `gsap.timeline()` for this layer playback.
 4. Use Auto Layout when possible.
 5. Use layer names for Liquid binding.
 6. Choose the scroll animation mode before copying Shopify code.

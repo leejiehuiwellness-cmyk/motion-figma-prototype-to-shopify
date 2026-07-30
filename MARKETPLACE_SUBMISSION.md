@@ -49,7 +49,7 @@ Turn a selected Figma frame, component, instance, component set, component child
 
 Motion: Figma Prototype to Shopify helps designers and Shopify developers move high-fidelity Figma prototype sections into Shopify faster. Select one frame, component, instance, component set, component child layer, or prototype flow starting point, run the plugin, review detected product, collection, menu, and cart bindings, then export a Shopify Liquid section.
 
-The generated section includes scoped CSS and JavaScript for common prototype interactions such as click, hover, press, after delay, overlays, URL actions, and Smart Animate-style matching layer changes. Users can choose Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, or Pin Sequence behavior, and can rename exported image/SVG assets before regenerating Copy Code, Copy CSS, Copy JS, ZIP, manifest, and report. The export report preserves raw Figma prototype reactions and clearly lists unsupported features so teams know what to adjust manually.
+The generated section includes scoped CSS and JavaScript for common prototype interactions such as click, hover, press, after delay, overlays, URL actions, route/loop detection, and Smart Animate-style matching layer changes. Users can choose Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, or Pin Sequence behavior, and can rename exported image/SVG assets before regenerating Copy Code, Copy CSS, Copy JS, ZIP, manifest, and report. If GSAP is already loaded by the Shopify theme, Motion uses GSAP timeline playback for matched layers and keeps a no-dependency fallback. The export report preserves raw Figma prototype reactions and clearly lists unsupported features so teams know what to adjust manually.
 
 Best for:
 

@@ -33,8 +33,11 @@
 - Generated Liquid uses one `.fts-stage` sized from the starting state, then stacks `.fts-variant` states absolutely inside it.
 - Generated runtime includes `changeVariant(sourceNodeId, destinationNodeId, transition)` and switches by exact Figma node ID.
 - Smart Animate layer diffs now include both source and destination node IDs. The storefront runtime prepares matching destination layers from source geometry, mutes the matched source layers, then plays the destination layers into their final position/scale/rotation/opacity/color/radius so component prototype chains read as continuous motion instead of frame snapshots.
+- Matched Smart Animate layers use GSAP timeline playback when `window.gsap` is already available on the Shopify theme, while keeping the original no-dependency fallback.
+- Motion now builds and exports a prototype route graph, including circular variant/component loops, so the Motion tab and reports can show routes such as `Variant 3 -> Variant 4 -> Variant 3`.
 - Scroll animation settings are now compiled into each viewport motion JSON, with Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, and Pin Sequence runtime behavior.
 - Exported assets now record `defaultFilename` and user-facing `shopifyFilename`. The Assets tab Save and Run flow regenerates Copy Code, Copy CSS, Copy JS, ZIP, manifest, and report with renamed files.
+- SVG forcing supports clean filename layers such as `home_solution.svg`; image/PNG shadows are emitted on the Figma layer wrapper, not the inner file asset, and generated markup follows Figma layer panel order with CSS `z-index` preserving the visual stack.
 - Generated Copy Code mode embeds CSS in `{% stylesheet %}` and JavaScript in a regular `<script>` tag inside the Liquid section. The optional `assets/*.css` and `assets/*.js` files are still packaged as developer copies, but the default Liquid does not load them with `asset_url`, preventing double loading.
 - Generated text inherits Shopify theme font variables by default without adding extra theme-style settings to the section schema.
 - Asset export now deduplicates by image hash or vector node ID, records every `usedBy` node, and writes failed exports into the asset manifest with warnings.

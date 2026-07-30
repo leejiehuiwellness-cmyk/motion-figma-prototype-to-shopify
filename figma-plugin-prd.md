@@ -233,7 +233,8 @@ The plugin must:
 - Export bitmap/image-fill nodes as PNG or JPG.
 - Name assets with sanitized, deterministic names.
 - Allow users to rename exported image/SVG assets and regenerate Copy Code, Copy CSS, Copy JS, ZIP, manifest, and report from the renamed Shopify filenames.
-- Force SVG export for layers named with formats such as `logo.svg`, `Logo [svg]`, `Logo #svg`, or `Logo export=svg` when Figma can export that layer as SVG.
+- Force SVG export for layers named with clean SVG filenames such as `home_solution.svg`, or formats such as `logo.svg`, `Logo [svg]`, `Logo #svg`, or `Logo export=svg` when Figma can export that layer as SVG.
+- Apply PNG/image shadows from the Figma layer effects on the generated layer wrapper, not from the inner file asset.
 - Deduplicate identical assets where possible.
 - Preserve alt text candidates from layer names.
 - Generate asset references using Shopify Liquid asset filters.
@@ -560,6 +561,10 @@ type ShopifyExportModel = {
 - Given a click reaction from one frame state to another with Smart Animate position/opacity changes, when exported, then the Shopify section animates between those states.
 - Given a selected scroll animation mode, when exported, then the generated Liquid motion JSON and runtime include Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, or Pin Sequence behavior.
 - Given a renamed exported asset, when the user clicks Save and Run, then Copy Code, Copy CSS, Copy JS, ZIP, manifest, and report all use the saved Shopify asset filename.
+- Given a layer named `home_solution.svg`, when exported, then Motion attempts SVG export and uses a clean Shopify-safe filename stem.
+- Given a prototype route that loops between variants/components/frames, when exported, then the Motion tab, manifest, and report show the loop.
+- Given GSAP already exists on the Shopify theme, when Smart Animate matched layers play, then Motion uses GSAP timeline playback with a no-dependency fallback.
+- Given image layer drop shadows in Figma, when exported, then the shadow is emitted on the generated layer wrapper and the inner image file asset remains shadow-free.
 - Given an unsupported drag interaction, when exported, then the plugin does not crash and the report lists the unsupported interaction.
 - Given reduced motion enabled in the browser, when the section loads, then non-essential motion is skipped or duration is reduced to zero.
 

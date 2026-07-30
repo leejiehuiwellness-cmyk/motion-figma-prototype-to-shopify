@@ -65,7 +65,9 @@ The plugin reads Figma prototype interaction details from the selected flow:
 - Direction, duration, and easing.
 - Scroll animation mode: Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, or Pin Sequence.
 
-Keep names consistent between source and destination frames if you want Smart Animate-style conversion. Figma Smart Animate matches layers by name and hierarchy; this plugin follows the same idea for Shopify motion diffs. When a safe match exists, Motion animates the destination layer from the source layer geometry to its final Shopify geometry so component animation chains feel continuous instead of like separate frame snapshots.
+Keep names consistent between source and destination frames if you want Smart Animate-style conversion. Figma Smart Animate matches layers by name and hierarchy; this plugin follows the same idea for Shopify motion diffs. When a safe match exists, Motion animates the destination layer from the source layer geometry to its final Shopify geometry so component animation chains feel continuous instead of like separate frame snapshots. If the Shopify theme already loads GSAP, Motion uses `gsap.timeline()` for that playback and keeps a no-dependency fallback.
+
+The Motion tab also shows the detected prototype route graph. If a sequence loops back, such as one variant linking to Variant 4 and Variant 4 linking back to Variant 3, Motion flags that loop before you copy the Shopify code.
 
 For the complete trigger/action/transition support table, read `PROTOTYPE_SUPPORT_MATRIX.md`. It follows Figma's official "Guide to prototyping in Figma" and the Figma Plugin API reaction model.
 
@@ -74,6 +76,7 @@ For the complete trigger/action/transition support table, read `PROTOTYPE_SUPPOR
 Vector layers export as SVG automatically. If a designer wants an image/frame layer to export as SVG when Figma supports it, name the layer with one of these formats:
 
 ```text
+home_solution.svg
 logo.svg
 Logo [svg]
 Logo #svg

@@ -19,8 +19,11 @@ Use this checklist to get Motion: Figma Prototype to Shopify running locally tod
 - Packaged project ZIP: `dist/motion-figma-prototype-to-shopify-plugin.zip`
 - Export report includes raw Figma prototype reactions for animation handoff fidelity
 - Runtime Smart Animate playback uses destination-layer interpolation for smoother Shopify prototype motion
+- Runtime can use `gsap.timeline()` for matched layer playback when the Shopify theme already loads GSAP, with a fallback when it does not
+- Motion tab, manifest, and export report expose prototype routes and circular loops
 - Scroll animation modes: Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, and Pin Sequence
 - Assets tab can rename exported image/SVG files; Save and Run regenerates Copy Code, Copy CSS, Copy JS, ZIP, manifest, and report
+- SVG force names include `home_solution.svg`; PNG/image shadows stay on the Figma layer wrapper while inner file assets remain shadow-free
 - GitHub repo created: https://github.com/leejiehuiwellness-cmyk/motion-figma-prototype-to-shopify
 
 ## B. Run Locally in Figma Desktop
