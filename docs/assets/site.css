@@ -312,6 +312,12 @@ h3 {
   overflow: hidden;
 }
 
+.microcopy {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .window-bar {
   align-items: center;
   background: #252b29;

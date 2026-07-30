@@ -163,8 +163,22 @@
     .actions {
       grid-column: 1 / -1;
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
       gap: 8px;
+    }
+
+    .responsive-picks {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .responsive-picks strong {
+      color: var(--text);
+      font-weight: 600;
     }
 
     .tabs {
@@ -313,12 +327,20 @@
   <main>
     <section class="toolbar">
       <div class="field">
-        <label for="sectionName">Section name</label>
+        <label for="sectionName">Schema name</label>
         <input id="sectionName" value="Motion: Figma Prototype to Shopify">
       </div>
       <div class="field">
-        <label for="filePrefix">File prefix</label>
+        <label for="filePrefix">File name</label>
         <input id="filePrefix" value="motion-figma-prototype-to-shopify">
+      </div>
+      <div class="field compact-field">
+        <label for="languageLabel">Language label</label>
+        <select id="languageLabel">
+          <option value="en">en</option>
+          <option value="cn">cn</option>
+          <option value="my">my</option>
+        </select>
       </div>
       <div class="field">
         <label for="assetScale">Asset scale</label>
@@ -333,15 +355,21 @@
         Video fallback
       </label>
       <div class="actions">
+        <button id="setDesktopFrame" type="button">Set Desktop</button>
+        <button id="setMobileFrame" type="button">Set Mobile</button>
         <button id="rescan">Rescan</button>
         <button id="export" class="primary">Generate export</button>
         <button id="download" disabled>Download ZIP</button>
+      </div>
+      <div class="responsive-picks">
+        <span>Desktop: <strong id="desktopFrameLabel">current selection</strong></span>
+        <span>Mobile: <strong id="mobileFrameLabel">not set</strong></span>
       </div>
     </section>
 
     <nav class="tabs" aria-label="Plugin sections">
       <button class="tab active" data-tab="overview">Overview</button>
-      <button class="tab" data-tab="copy">Copy</button>
+      <button class="tab" data-tab="copy">Copy Code</button>
       <button class="tab" data-tab="bindings">Bindings</button>
       <button class="tab" data-tab="motion">Motion</button>
       <button class="tab" data-tab="guide">Guide</button>
@@ -357,10 +385,10 @@
       </div>
 
       <div id="copy" class="panel">
-        <h2>Copy to Shopify</h2>
-        <div class="notice ok">Use the Liquid copy for the fastest preview. It includes inline Shopify section CSS and JavaScript.</div>
+        <h2>Copy Code to Shopify</h2>
+        <div class="notice ok">Use Copy Code for the section file. The Liquid includes generated CSS and JavaScript; upload only referenced image/SVG assets from the ZIP to Shopify theme assets.</div>
         <div class="copy-actions">
-          <button data-copy="sections">Copy Liquid</button>
+          <button data-copy="sections">Copy Code</button>
           <button data-copy="css">Copy CSS</button>
           <button data-copy="js">Copy JS</button>
         </div>
@@ -387,13 +415,14 @@
         <h2>Onboarding guide</h2>
         <ol>
           <li>In Figma, open a finished Shopify page, section, component, or component variant design.</li>
-          <li>Select one frame, component, component set, instance, group, or any layer inside a component/instance. If you select a child layer, Motion exports the nearest supported ancestor as the Shopify section boundary.</li>
+          <li>Select the desktop frame/section and click <strong>Set Desktop</strong>. Optionally select the mobile frame/section and click <strong>Set Mobile</strong>. If Desktop is not set, Motion uses the current selection as desktop.</li>
+          <li>If you select a child layer, Motion exports the nearest supported ancestor as the Shopify section boundary.</li>
           <li>For Shopify dynamic content, rename layers with data names such as <code>product.title</code>, <code>product.price</code>, <code>product.image</code>, <code>collection.grid</code>, <code>menu.main</code>, and <code>cart.count</code>.</li>
           <li>Add prototype interactions in Figma Prototype mode. Supported v1 interactions include click, hover, press, mouse enter/leave, mouse down/up, after delay, navigate, swap, change-to, open overlay, back, close, and URL.</li>
           <li>Run this plugin, review warnings, then click <strong>Generate export</strong>.</li>
-          <li>Use <strong>Copy Liquid</strong> to paste the one-file section into Shopify, or download the ZIP and copy files into a Shopify theme project.</li>
+          <li>Use <strong>Copy Code</strong> for the Shopify section file, or download the ZIP for the Liquid, optional CSS/JavaScript developer copies, manifest, report, and assets.</li>
           <li>In Shopify Admin, go to Online Store > Themes > Edit code > Sections, add a new section with the generated file name, paste the Liquid, save, then add the section in the theme editor.</li>
-          <li>If the section references assets, upload the generated files from the ZIP's <code>assets</code> folder into the Shopify theme assets folder.</li>
+          <li>If the section references image or SVG assets, upload those generated files from the ZIP's <code>assets</code> folder into the Shopify theme assets folder. CSS and JavaScript are already included in Copy Code mode.</li>
         </ol>
       </div>
     </section>
@@ -402,7 +431,9 @@
   <script>
     var state = {
       summary: null,
-      files: []
+      files: [],
+      desktopFrame: null,
+      mobileFrame: null
     };
 
     var statusEl = document.getElementById("status");
@@ -413,6 +444,16 @@
     var motionEl = document.getElementById("motionTable");
     var copyBox = document.getElementById("copyBox");
     var downloadButton = document.getElementById("download");
+    var desktopFrameLabel = document.getElementById("desktopFrameLabel");
+    var mobileFrameLabel = document.getElementById("mobileFrameLabel");
+
+    document.getElementById("setDesktopFrame").addEventListener("click", function () {
+      send("capture-responsive-frame", { role: "desktop" });
+    });
+
+    document.getElementById("setMobileFrame").addEventListener("click", function () {
+      send("capture-responsive-frame", { role: "mobile" });
+    });
 
     document.getElementById("rescan").addEventListener("click", function () {
       send("scan");
@@ -476,16 +517,25 @@
         return;
       }
 
+      if (message.type === "responsive-frame-captured") {
+        if (message.role === "mobile") state.mobileFrame = message.frame;
+        else state.desktopFrame = message.frame;
+        setStatus((message.role === "mobile" ? "Mobile" : "Desktop") + " frame saved");
+        renderFrameLabels();
+        return;
+      }
+
       if (message.type === "error") {
         setStatus("Needs attention");
         warningsEl.innerHTML = '<div class="notice warn">' + escapeHtml(message.message) + '</div>';
       }
     };
 
-    function send(type) {
+    function send(type, extra) {
       parent.postMessage({
         pluginMessage: {
           type: type,
+          role: extra && extra.role,
           settings: getSettings()
         }
       }, "*");
@@ -495,6 +545,9 @@
       return {
         sectionName: document.getElementById("sectionName").value,
         filePrefix: document.getElementById("filePrefix").value,
+        languageLabel: document.getElementById("languageLabel").value,
+        desktopFrameId: state.desktopFrame ? state.desktopFrame.figmaId : "",
+        mobileFrameId: state.mobileFrame ? state.mobileFrame.figmaId : "",
         assetScale: Number(document.getElementById("assetScale").value || 1),
         includeVideoFallback: document.getElementById("includeVideoFallback").checked
       };
@@ -511,7 +564,13 @@
       renderBindings();
       renderMotion();
       renderCopyDefault();
+      renderFrameLabels();
       downloadButton.disabled = !state.files.length;
+    }
+
+    function renderFrameLabels() {
+      desktopFrameLabel.textContent = state.desktopFrame ? state.desktopFrame.name + " (" + state.desktopFrame.type + ")" : "current selection";
+      mobileFrameLabel.textContent = state.mobileFrame ? state.mobileFrame.name + " (" + state.mobileFrame.type + ")" : "not set";
     }
 
     function renderSummary() {

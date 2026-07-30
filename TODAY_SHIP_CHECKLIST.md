@@ -32,11 +32,14 @@ Use this checklist to get Motion: Figma Prototype to Shopify running locally tod
 C:\Users\User\Documents\Figma Prototype to Shopify - Motion\manifest.json
 ```
 
-6. In Figma, select exactly one top-level frame, section, component, component set, instance, group, or a layer inside a component/instance.
+6. In Figma, select the desktop frame, section, component, component set, instance, group, or a layer inside a component/instance.
 7. Run Plugins > Development > Motion: Figma Prototype to Shopify.
-8. Click Generate export.
-9. Open the Copy tab.
-10. Click Copy Liquid.
+8. Click Set Desktop.
+9. Optional: select the mobile frame/section and click Set Mobile.
+10. Choose Language label.
+11. Click Generate export.
+12. Open the Copy Code tab.
+13. Click Copy Code.
 
 ## C. Paste into Shopify
 

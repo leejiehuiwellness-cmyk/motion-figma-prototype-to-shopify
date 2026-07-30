@@ -14,6 +14,7 @@ Primary references:
 | --- | --- | --- |
 | Flow starting point | The first frame, component, instance, or variant in a prototype flow | Use the selected frame, section, component, component set, instance, group, or nearest supported ancestor as the Shopify section root |
 | Component layer selection | A child layer selected inside a component or instance | Automatically promotes export to the nearest component/instance/component set boundary when available |
+| Component Set variants | Direct component children in a selected Component Set | Exported as overlaid Shopify states inside one responsive stage |
 | Hotspot | Layer where the interaction starts | Compiled to a DOM element with `data-fts-node` |
 | Trigger | User or timed event that starts an action | Supported subset is compiled; unsupported triggers are reported |
 | Action | What happens after the trigger | Supported subset is compiled; unsupported actions are reported |
@@ -50,7 +51,7 @@ The export report includes a `prototypeReactions` array with the raw interaction
 | `NODE` + `NAVIGATE` | Supported | Animate to target state when target frame is readable |
 | `NODE` + `SWAP` | Supported | Animate to target state |
 | `NODE` + `OVERLAY` | Supported | Open generated overlay markup |
-| `NODE` + `CHANGE_TO` | Supported | Animate to target component/state |
+| `NODE` + `CHANGE_TO` | Supported | Switch to target component/state by exact Figma node ID |
 | `URL` | Supported | Navigate browser to URL |
 | `BACK` | Supported | Close current generated overlay |
 | `CLOSE` | Supported | Close current generated overlay |

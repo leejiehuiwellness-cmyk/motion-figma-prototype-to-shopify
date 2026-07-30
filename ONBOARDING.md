@@ -71,34 +71,38 @@ For the complete trigger/action/transition support table, read `PROTOTYPE_SUPPOR
 ## 4. Run the Plugin
 
 1. Open Figma Desktop.
-2. Select the starting frame, component, component instance, component set, group, section, or a layer inside the component you want to export.
+2. Select the desktop frame, component, component instance, component set, group, section, or a layer inside the component you want to export.
 3. Run Plugins > Development > Motion: Figma Prototype to Shopify.
-4. Click Rescan if you changed the selection.
-5. Review Overview, Bindings, Motion, and warnings.
-6. Click Generate export.
+4. Click Set Desktop.
+5. Optional: select the mobile frame/section and click Set Mobile.
+6. Choose Language label: `en`, `cn`, or `my`. Exported assets use names such as `home-feature-desktop-en-*` and `home-feature-mobile-en-*`.
+7. Click Rescan if you changed the selection.
+8. Review Overview, Bindings, Motion, and warnings.
+9. Click Generate export.
 
 ## 5. Copy to Shopify
 
 Fastest path:
 
-1. Open the Copy tab in the plugin.
-2. Click Copy Liquid.
+1. Open the Copy Code tab in the plugin.
+2. Click Copy Code.
 3. Open Shopify Admin.
 4. Go to Online Store > Themes > Edit code.
 5. In the `sections` folder, click Add a new section.
 6. Name it `motion-figma-prototype-to-shopify`, or use the file prefix shown in the plugin.
 7. Replace all generated starter code with the copied Liquid.
-8. Save.
-9. Open Customize theme.
-10. Add the section to a page.
-11. Choose product, collection, and menu settings if the section asks for them.
+8. Upload referenced image/SVG assets from the ZIP as needed. CSS and JavaScript are already included inside the copied section.
+9. Save.
+10. Open Customize theme.
+11. Add the section to a page.
+12. Choose product, collection, and menu settings if the section asks for them. Font family, font style, and font weight inherit from the Shopify theme automatically.
 
 ZIP path:
 
 1. Click Download ZIP in the plugin.
 2. Unzip the export.
 3. Copy `sections/*.liquid` into your Shopify theme `sections` folder.
-4. Upload referenced files from `assets/` into your Shopify theme `assets` folder.
+4. Upload referenced image/SVG files from `assets/` into your Shopify theme `assets` folder. The generated CSS/JavaScript files are optional developer copies in Copy Code mode.
 5. Optionally copy `templates/page.*.json` into your theme `templates` folder.
 6. Preview with Shopify CLI or the Shopify theme editor.
 

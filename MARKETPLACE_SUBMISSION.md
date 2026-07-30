@@ -90,7 +90,7 @@ Prepare screenshots showing:
 2. Running the plugin.
 3. Binding review.
 4. Motion review.
-5. Copy Liquid panel.
+5. Copy Code panel.
 6. Shopify section rendered in a theme preview.
 
 Figma's publishing flow recommends a 128 x 128px icon and a 1920 x 1080px thumbnail. The review goal is typically 5-10 business days after first submission.
@@ -128,7 +128,7 @@ Do not submit until:
 
 - `npm run validate` passes.
 - The plugin imports from manifest in Figma Desktop.
-- A selected frame, component, instance, component set, or child layer inside a component can be scanned.
-- Copy Liquid produces a complete Shopify section.
+- Selected desktop and optional mobile frames, components, instances, component sets, or child layers can be scanned.
+- Copy Code produces a complete responsive Shopify section with inline CSS and a regular script tag.
 - Download ZIP creates a ZIP with section, assets, template, README, and report.
 - A Shopify theme preview can render the pasted section.

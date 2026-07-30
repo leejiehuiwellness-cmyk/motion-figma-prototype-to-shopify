@@ -8,9 +8,12 @@ For a ready-made smoke test before running the plugin in Figma, use `examples/ex
 
 1. Select one frame, component, component set, instance, group, section, or a layer inside a component/instance.
 2. Run Motion: Figma Prototype to Shopify.
-3. Click Generate export.
-4. Open the Copy tab.
-5. Click Copy Liquid.
+3. Click Set Desktop.
+4. Optional: select the mobile frame/section and click Set Mobile.
+5. Choose Language label: `en`, `cn`, or `my`.
+6. Click Generate export.
+7. Open the Copy Code tab.
+8. Click Copy Code.
 
 ## B. In Shopify Admin
 
@@ -27,9 +30,14 @@ motion-figma-prototype-to-shopify
 
 If you changed File prefix in the plugin, use that file prefix instead.
 
+If you leave Schema name as the default and set File name to `home_feature`, the copied code uses `"name": "home_feature"` in `{% schema %}` and saves the file as `home-feature.liquid`.
+
+Responsive asset filenames include the frame mode and language label, for example `home-feature-desktop-en-*` and `home-feature-mobile-en-*`. Reused component/image assets are deduplicated in the ZIP and shared by the desktop and mobile code.
+
 7. Delete the starter code Shopify creates.
 8. Paste the full Liquid copied from the plugin.
 9. Click Save.
+10. CSS and JavaScript are already inside the copied section in Copy Code mode.
 
 ## C. Add the Section to a Page
 
@@ -67,8 +75,8 @@ After saving, Shopify should render:
 - The selected Figma section layout.
 - The selected component/instance layout when a designer builds the Shopify section as a Figma component.
 - Liquid product/collection/menu/cart data for named layers.
-- Inline CSS from the generated `{% stylesheet %}` block.
-- Inline JavaScript motion from the generated `{% javascript %}` block.
+- Inline CSS and JavaScript inside the generated Liquid section.
+- Font family, font style, and font weight inherited from the Shopify theme.
 - Supported Figma prototype animation such as click, hover, delay, overlay, and Smart Animate-style diffs.
 
 ## F. Common Fixes
@@ -76,6 +84,7 @@ After saving, Shopify should render:
 | Symptom | Fix |
 | --- | --- |
 | Images are missing | Upload generated assets to the theme `assets` folder. |
+| Section is not full width | Regenerate with the latest plugin. Copy Code now uses full-bleed viewport CSS instead of capping the stage at the Figma frame width. |
 | Product data is blank | Add the section to a product page or choose Product fallback in section settings. |
 | Collection grid is blank | Choose Collection fallback in section settings. |
 | Menu is blank | Choose Main menu in section settings. |

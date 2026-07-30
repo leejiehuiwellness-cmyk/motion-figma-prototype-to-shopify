@@ -99,7 +99,10 @@
 assets/motion-figma-prototype-to-shopify.css
 assets/motion-figma-prototype-to-shopify.js
 templates/page.motion-figma-prototype-to-shopify.json
+motion-figma-prototype-to-shopify-manifest.json
+motion-figma-prototype-to-shopify-export-report.md
 motion-figma-prototype-to-shopify-report.json</code></pre>
+          <p class="microcopy">Copy Code mode keeps CSS and JavaScript inside the Liquid section. The CSS/JS files are optional developer copies.</p>
         </div>
       </section>
 
@@ -127,7 +130,7 @@ motion-figma-prototype-to-shopify-report.json</code></pre>
             <span class="step-number">3</span>
             <div>
               <h3>选择要转换的 prototype 或 component 起点</h3>
-              <p>选中一个顶层 frame、section、component、component set、instance、group，或 component/instance 内部任意 layer。若选中的是子 layer，Motion 会自动提升到最近的 component/instance/component set 作为 Shopify section 边界。</p>
+              <p>选中 desktop frame/section 后点击 Set Desktop；如果有 mobile frame/section，再选中它并点击 Set Mobile。Language label 可选 en、cn、my，导出的 assets 会带 desktop/mobile 与 language 后缀。若选中的是子 layer，Motion 会自动提升到最近的 component/instance/component set 作为 Shopify section 边界。</p>
             </div>
           </li>
           <li>
@@ -148,7 +151,7 @@ motion-figma-prototype-to-shopify-report.json</code></pre>
             <span class="step-number">6</span>
             <div>
               <h3>生成 Shopify Liquid export</h3>
-              <p>运行 Motion，点击 Generate export。你可以直接 Copy Liquid，也可以 Download ZIP 获取 section、assets、template JSON 和 conversion report。Report 会记录 selected layer 与实际 export root。</p>
+              <p>运行 Motion，点击 Generate export。Copy Code 会把 desktop 与 mobile frame 合并成同一个 Shopify section，用 CSS breakpoint 切换，同时复用重复的 image/SVG assets。你也可以 Download ZIP 获取 section、optional CSS/JS developer copies、assets、manifest、template JSON 和 conversion report。</p>
             </div>
           </li>
           <li>
@@ -162,7 +165,7 @@ motion-figma-prototype-to-shopify-report.json</code></pre>
             <span class="step-number">8</span>
             <div>
               <h3>添加 section 并预览上线</h3>
-              <p>回到 Customize，添加 Motion section，选择 product fallback、collection fallback、main menu 等设置。若导出 ZIP 里有图片或 SVG，请上传到 Shopify theme assets。</p>
+              <p>回到 Customize，添加 Motion section，选择 product fallback、collection fallback、main menu 等设置。字体 family/style/weight 会自动继承 Shopify theme。若导出 ZIP 里有图片或 SVG，请上传到 Shopify theme assets。</p>
             </div>
           </li>
         </ol>
@@ -220,8 +223,8 @@ motion-figma-prototype-to-shopify-report.json</code></pre>
           <p class="eyebrow">Shopify paste</p>
           <h2 id="shopify-title">Shopify 里要粘贴什么</h2>
           <p>
-            Motion 生成的 Liquid 已经包含 `{% stylesheet %}`、`{% javascript %}` 和 `{% schema %}`，
-            所以最快测试方式是直接复制完整 section code 到 Shopify。
+            Motion Copy Code Liquid already includes generated CSS, JavaScript, and `{% schema %}`.
+            Fastest test: copy the section code, then upload only image/SVG assets referenced from the ZIP.
           </p>
           <a class="text-link" href="https://github.com/leejiehuiwellness-cmyk/motion-figma-prototype-to-shopify/blob/main/SHOPIFY_COPY_PASTE_GUIDE.md" target="_blank" rel="noreferrer">Open full Shopify guide</a>
         </div>
@@ -235,7 +238,7 @@ motion-figma-prototype-to-shopify-report.json</code></pre>
           <pre><code>motion-figma-prototype-to-shopify</code></pre>
           <div class="panel-top">
             <strong>Liquid skeleton</strong>
-            <button class="icon-button" type="button" data-copy="{{ 'motion-figma-prototype-to-shopify.css' | asset_url | stylesheet_tag }}" aria-label="Copy Liquid example">
+            <button class="icon-button" type="button" data-copy="{% stylesheet %}/* generated CSS */{% endstylesheet %}" aria-label="Copy Code example">
               Copy
             </button>
           </div>

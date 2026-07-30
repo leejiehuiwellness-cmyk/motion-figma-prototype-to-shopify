@@ -11,7 +11,7 @@ The first version focuses on a practical same-day workflow:
 - Select one finished Figma frame, component, instance, component variant, or a layer inside a component.
 - Run the plugin in Figma Desktop.
 - Review detected Shopify bindings and prototype interactions.
-- Copy the generated Liquid section directly into Shopify, or download a ZIP with Liquid, CSS, JavaScript, template JSON, assets, and a conversion report.
+- Copy the generated Copy Code section directly into Shopify, or download a ZIP with Liquid, optional CSS/JavaScript developer copies, template JSON, assets, and a conversion report.
 
 ## What It Generates
 
@@ -22,11 +22,17 @@ sections/motion-figma-prototype-to-shopify.liquid
 assets/motion-figma-prototype-to-shopify.css
 assets/motion-figma-prototype-to-shopify.js
 templates/page.motion-figma-prototype-to-shopify.json
+motion-figma-prototype-to-shopify-manifest.json
+motion-figma-prototype-to-shopify-export-report.md
 motion-figma-prototype-to-shopify-report.json
 README.md
 ```
 
-The Liquid section is self-contained for fast copy/paste. It includes generated CSS inside `{% stylesheet %}` and generated JavaScript inside `{% javascript %}`. If the section references exported images or SVGs, upload those files into Shopify theme assets.
+The default Copy Code section includes generated CSS in `{% stylesheet %}` and generated JavaScript in a regular `<script>` tag so one pasted section file can run in Shopify. Upload only referenced image or SVG assets into Shopify theme assets before previewing. The generated CSS/JS files in the ZIP are optional developer copies and are not loaded by the default Liquid section.
+
+Generated sections are full-bleed by default. Motion uses viewport-width CSS so the Figma stage can expand past Shopify theme `page-width` containers while preserving the original Figma aspect ratio.
+
+For responsive exports, select the desktop frame in Figma and click `Set Desktop`, then select the mobile frame and click `Set Mobile`. Motion combines both frames into one Liquid section and switches them with CSS at mobile widths while sharing duplicate image/SVG assets when possible.
 
 An example copy/paste section is included at `examples/example-shopify-section.liquid`.
 
@@ -48,15 +54,20 @@ manifest.json
 
 ## Quick Shopify Test
 
-1. In Figma, select one top-level frame, component, instance, component set, group, section, or a layer inside a component/instance.
+1. In Figma, select one top-level desktop frame, component, instance, component set, group, section, or a layer inside a component/instance.
 2. Run the plugin.
-3. Click Generate export.
-4. Open the Copy tab.
-5. Click Copy Liquid.
-6. In Shopify Admin, go to Online Store > Themes > Edit code.
-7. Add a new section named `motion-figma-prototype-to-shopify`.
-8. Paste the copied Liquid and save.
-9. Open the theme editor and add the section to a page.
+3. Click Set Desktop.
+4. Optional: select the mobile frame/section and click Set Mobile.
+5. Choose Language label: `en`, `cn`, or `my`.
+6. Click Generate export.
+7. Open the Copy Code tab.
+8. Click Copy Code.
+9. In Shopify Admin, go to Online Store > Themes > Edit code.
+10. Add a new section named `motion-figma-prototype-to-shopify`.
+11. Paste the copied Liquid and save.
+12. Open the theme editor and add the section to a page.
+
+The Shopify schema `name` follows the Schema name field. If Schema name is left as the default and you set File name to something like `home_feature`, Motion uses `home_feature` as the schema display name and `home-feature.liquid` as the Shopify-safe file name.
 
 ## Component Layer Export
 
@@ -64,8 +75,13 @@ Designers often build Shopify sections as components or variants. Motion support
 
 - Select a component, component set, or instance directly to export it as the Shopify section boundary.
 - Select a child layer inside a component or instance, such as `product.title` or `product.add_to_cart`; Motion automatically exports the nearest component/instance ancestor.
-- Select a variant component to preserve prototype `CHANGE_TO` / Smart Animate-style state changes between variants when matching layer names and hierarchy are consistent.
+- Select a variant component to export its parent Component Set. Motion exports every direct component variant and uses one responsive stage with overlaid states instead of placing variants side by side.
+- Prototype `CHANGE_TO` / Smart Animate-style state changes are compiled as real source-to-destination variant switches by exact Figma node ID when matching layer names and hierarchy are consistent.
 - The export report records both the selected layer and the actual export root so builders can verify the component boundary before pasting into Shopify.
+
+## Shopify Theme Font Inheritance
+
+Generated text inherits Shopify theme font variables such as `--font-body-family`, `--font-body-style`, `--font-body-weight`, `--font-heading-family`, `--font-heading-style`, and `--font-heading-weight`. Motion keeps the Figma text sizing and uses Shopify's `--font-body-scale` when the theme provides it, without adding extra theme-style settings to the section schema.
 
 ## Dynamic Layer Naming
 
