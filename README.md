@@ -81,7 +81,7 @@ Designers often build Shopify sections as components or variants. Motion support
 - Select a child layer inside a component or instance, such as `product.title` or `product.add_to_cart`; Motion automatically exports the nearest component/instance ancestor.
 - Select a variant component to export its parent Component Set. Motion exports every direct component variant and uses one responsive stage with overlaid states instead of placing variants side by side.
 - Prototype `CHANGE_TO` / Smart Animate-style state changes are compiled as real source-to-destination variant switches by exact Figma node ID when matching layer names and hierarchy are consistent.
-- Smart Animate playback prepares matching destination layers from the source layer geometry, then moves/scales/rotates/fades them into their final Shopify state. When the Shopify theme already loads GSAP, Motion uses `gsap.timeline()` for that layer playback; otherwise it falls back to no-dependency CSS/JavaScript.
+- Smart Animate playback prepares matching destination layers from the source layer geometry, then moves/scales/rotates/fades them into their final Shopify state. Motion now composes those deltas with each layer's Figma base transform/opacity so rotated or semi-transparent layers do not snap back to `rotation: 0` during playback. When the Shopify theme already loads GSAP, Motion uses `gsap.timeline()` for that layer playback; otherwise it falls back to no-dependency CSS/JavaScript.
 - Motion detects prototype routes between variants/components/frames and reports loops, such as `Variant 3 -> Variant 4 -> Variant 3`, in the Motion tab, manifest, and export report.
 - The export report records both the selected layer and the actual export root so builders can verify the component boundary before pasting into Shopify.
 - Generated exports include shared theme assets at `assets/motion-figma-gsap-runtime.css` and `assets/motion-figma-gsap-runtime.js`; Copy Code mode inlines that runtime code, while ZIP/external mode exposes the files for Shopify theme assets.
@@ -98,7 +98,7 @@ Vector layers export as SVG automatically. To force a non-vector image/frame lay
 
 Generated markup follows the Figma layer panel order, while CSS `z-index` preserves the visual stack in Shopify. PNG/image file assets keep `box-shadow: none`; Figma drop shadows are emitted on the layer wrapper so the shadow belongs to the selected layer, not the raw PNG file.
 
-Repeated CSS declarations are grouped across similar layers, so shared text/image style properties are emitted once and each layer keeps only its unique position, size, rotation, and z-index. Static Figma rotation and text properties such as weight, style, alignment, letter spacing, and line height are preserved while font family continues to inherit from the Shopify theme.
+Repeated CSS declarations are grouped across similar layers, so shared text/image style properties are emitted once and each layer keeps only its unique position, size, rotation, opacity, and z-index. Static Figma transform matrices, rotation, opacity, and text properties such as weight, style, alignment, letter spacing, and line height are preserved while font family continues to inherit from the Shopify theme.
 
 ## Dynamic Layer Naming
 

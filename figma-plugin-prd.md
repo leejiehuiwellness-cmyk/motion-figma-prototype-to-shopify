@@ -372,9 +372,11 @@ Supported Smart Animate property diffs:
 
 - position -> `x` / `y`
 - size -> `scaleX` / `scaleY` when safe
-- rotation -> `rotation`
-- opacity -> `autoAlpha` or opacity
+- rotation -> `rotation`, with Figma `relativeTransform` / `absoluteTransform` matrix fallback when `node.rotation` is unavailable
+- opacity -> `autoAlpha` or opacity, preserving the selected layer's static opacity in the final Shopify CSS state
 - fill color -> `backgroundColor` / SVG fill where safe
+
+Runtime playback must compose Smart Animate deltas with each destination layer's existing CSS/computed base transform, so rotated Figma layers never snap back to `rotation: 0` during GSAP or fallback playback.
 
 Unsupported diffs:
 

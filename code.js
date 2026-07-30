@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var PLUGIN_VERSION = "0.1.2";
+  var PLUGIN_VERSION = "0.1.3";
   var SHARED_RUNTIME_JS_ASSET = "motion-figma-gsap-runtime.js";
   var SHARED_RUNTIME_CSS_ASSET = "motion-figma-gsap-runtime.css";
   var MAX_ASSETS = 60;
@@ -571,6 +571,7 @@
     }
 
     var bounds = getRelativeBounds(node, parentModel, root);
+    var transform = readTransform(node);
     var model = {
       id: cleanNodeId(node.id),
       figmaId: node.id,
@@ -593,7 +594,8 @@
       height: bounds.height,
       absoluteX: bounds.absoluteX,
       absoluteY: bounds.absoluteY,
-      rotation: numberOrZero(node.rotation),
+      rotation: transform.rotation,
+      transform: transform,
       opacity: typeof node.opacity === "number" ? node.opacity : 1,
       layout: readLayout(node),
       fills: readPaints(node, "fills"),
@@ -1858,9 +1860,8 @@
     if (node.depth !== 0 && parent && !(parent.layout && parent.layout.mode) && node.zIndex) {
       lines.push("  z-index: " + Math.max(1, Math.round(node.zIndex)) + ";");
     }
-    if (Math.abs(node.rotation || 0) > 0.01) {
-      lines.push("  transform: rotate(" + round(node.rotation, 3) + "deg);");
-    }
+    var baseTransform = baseTransformCss(node);
+    if (baseTransform) lines.push("  transform: " + baseTransform + ";");
 
     if (node.children.length && node.depth !== 0 && node.layout.mode) {
       lines.push.apply(lines, flexCss(node));
@@ -1899,6 +1900,22 @@
     }
     lines.push("}");
     return lines;
+  }
+
+  function baseTransformCss(node) {
+    var transform = node && node.transform ? node.transform : {
+      rotation: node ? node.rotation : 0,
+      scaleX: 1,
+      scaleY: 1
+    };
+    var parts = [];
+    if (Math.abs(transform.rotation || 0) > 0.01) {
+      parts.push("rotate(" + round(transform.rotation, 3) + "deg)");
+    }
+    if (Math.abs((transform.scaleX || 1) - 1) > 0.001 || Math.abs((transform.scaleY || 1) - 1) > 0.001) {
+      parts.push("scale(" + round(transform.scaleX || 1, 4) + ", " + round(transform.scaleY || 1, 4) + ")");
+    }
+    return parts.join(" ");
   }
 
   function cssRuleFromLines(lines) {
@@ -2099,7 +2116,10 @@
       "      return 'power1.out';",
       "    }",
       "    function remember(el) {",
-      "      if (!originals.has(el)) originals.set(el, { transform: el.style.transform || '', opacity: el.style.opacity || '', backgroundColor: el.style.backgroundColor || '', borderRadius: el.style.borderRadius || '', width: el.style.width || '', height: el.style.height || '', transition: el.style.transition || '', willChange: el.style.willChange || '' });",
+      "      if (!originals.has(el)) {",
+      "        var computed = window.getComputedStyle ? window.getComputedStyle(el) : null;",
+      "        originals.set(el, { transform: el.style.transform || '', computedTransform: computed && computed.transform && computed.transform !== 'none' ? computed.transform : '', opacity: el.style.opacity || '', computedOpacity: computed && computed.opacity ? computed.opacity : '', backgroundColor: el.style.backgroundColor || '', borderRadius: el.style.borderRadius || '', width: el.style.width || '', height: el.style.height || '', transition: el.style.transition || '', willChange: el.style.willChange || '' });",
+      "      }",
       "    }",
       "    function restoreOriginal(el) {",
       "      var original = el && originals.get(el);",
@@ -2126,6 +2146,13 @@
       "    }",
       "    function numeric(value, fallback) { return typeof value === 'number' && isFinite(value) ? value : fallback; }",
       "    function inverseScale(value) { return value && isFinite(value) ? 1 / value : 1; }",
+      "    function baseTransform(original) { return original ? (original.transform || original.computedTransform || '') : ''; }",
+      "    function composeMotionTransform(base, x, y, scaleX, scaleY, rotation) {",
+      "      var motion = transformString(x, y, scaleX, scaleY, rotation);",
+      "      base = String(base || '').trim();",
+      "      if (motion && base) return motion + ' ' + base;",
+      "      return motion || base;",
+      "    }",
       "    function transformString(x, y, scaleX, scaleY, rotation) {",
       "      var transforms = [];",
       "      if (Math.abs(x || 0) > 0.01 || Math.abs(y || 0) > 0.01) transforms.push('translate(' + (x || 0) + 'px, ' + (y || 0) + 'px)');",
@@ -2148,8 +2175,9 @@
       "      var fromBorderRadius = reverse ? numeric(diff.toBorderRadius, diff.borderRadius) : diff.fromBorderRadius;",
       "      el.style.transition = 'none';",
       "      el.style.willChange = 'transform, opacity';",
-      "      var transform = transformString(fromX, fromY, fromScaleX, fromScaleY, fromRotation);",
-      "      if (transform) el.style.transform = transform;",
+      "      var original = originals.get(el);",
+      "      var transform = composeMotionTransform(baseTransform(original), fromX, fromY, fromScaleX, fromScaleY, fromRotation);",
+      "      el.style.transform = transform;",
       "      if (typeof fromOpacity === 'number') el.style.opacity = String(fromOpacity);",
       "      if (fromBackgroundColor) el.style.backgroundColor = fromBackgroundColor;",
       "      if (typeof fromBorderRadius === 'number') el.style.borderRadius = fromBorderRadius + 'px';",
@@ -2189,15 +2217,12 @@
       "      prepared.forEach(function (item) {",
       "        var diff = item.diff;",
       "        var reverse = item.reverse;",
+      "        var original = originals.get(item.el);",
       "        var finalOpacity = reverse ? diff.fromOpacity : diff.toOpacity;",
       "        var finalBackgroundColor = reverse ? diff.fromBackgroundColor : (diff.toBackgroundColor || diff.backgroundColor);",
       "        var finalBorderRadius = reverse ? diff.fromBorderRadius : numeric(diff.toBorderRadius, diff.borderRadius);",
       "        var vars = {",
-      "          x: 0,",
-      "          y: 0,",
-      "          scaleX: 1,",
-      "          scaleY: 1,",
-      "          rotation: 0,",
+      "          transform: baseTransform(original) || 'none',",
       "          duration: Math.max(0, duration) / 1000,",
       "          ease: toGsapEase(ease),",
       "          overwrite: 'auto',",
@@ -2233,11 +2258,8 @@
       "      if (!el) return null;",
       "      remember(el);",
       "      el.style.transition = transitionFor(diff);",
-      "      var transforms = [];",
-      "      if (diff.x || diff.y) transforms.push('translate(' + (diff.x || 0) + 'px, ' + (diff.y || 0) + 'px)');",
-      "      if (diff.scaleX || diff.scaleY) transforms.push('scale(' + (diff.scaleX || 1) + ', ' + (diff.scaleY || 1) + ')');",
-      "      if (diff.rotation) transforms.push('rotate(' + diff.rotation + 'deg)');",
-      "      if (transforms.length) el.style.transform = transforms.join(' ');",
+      "      var original = originals.get(el);",
+      "      el.style.transform = composeMotionTransform(baseTransform(original), diff.x || 0, diff.y || 0, diff.scaleX || 1, diff.scaleY || 1, diff.rotation || 0);",
       "      if (typeof diff.opacity === 'number') el.style.opacity = String(diff.opacity);",
       "      if (diff.backgroundColor) el.style.backgroundColor = diff.backgroundColor;",
       "      if (typeof diff.borderRadius === 'number') el.style.borderRadius = diff.borderRadius + 'px';",
@@ -2967,15 +2989,73 @@
     return null;
   }
 
+  function readTransform(node) {
+    var matrix = readTransformMatrix(node, "relativeTransform") || readTransformMatrix(node, "absoluteTransform");
+    var fromMatrix = matrix ? decomposeTransformMatrix(matrix) : null;
+    var rotation = fromMatrix && typeof fromMatrix.rotation === "number"
+      ? fromMatrix.rotation
+      : typeof node.rotation === "number" && isFinite(node.rotation)
+        ? node.rotation
+        : 0;
+    return {
+      rotation: round(rotation, 3),
+      scaleX: fromMatrix ? round(fromMatrix.scaleX, 4) : 1,
+      scaleY: fromMatrix ? round(fromMatrix.scaleY, 4) : 1
+    };
+  }
+
+  function readTransformMatrix(node, property) {
+    var matrix = node && property in node ? node[property] : null;
+    if (!Array.isArray(matrix) || matrix.length < 2 || !Array.isArray(matrix[0]) || !Array.isArray(matrix[1])) return null;
+    if (matrix[0].length < 3 || matrix[1].length < 3) return null;
+    return matrix;
+  }
+
+  function decomposeTransformMatrix(matrix) {
+    var a = numberOrZero(matrix[0][0]);
+    var c = numberOrZero(matrix[0][1]);
+    var b = numberOrZero(matrix[1][0]);
+    var d = numberOrZero(matrix[1][1]);
+    var scaleX = Math.sqrt(a * a + b * b) || 1;
+    var scaleY = Math.sqrt(c * c + d * d) || 1;
+    return {
+      rotation: Math.atan2(b, a) * 180 / Math.PI,
+      scaleX: scaleX,
+      scaleY: scaleY
+    };
+  }
+
   function getRelativeBounds(node, parentModel, root) {
     var abs = "absoluteBoundingBox" in node && node.absoluteBoundingBox ? node.absoluteBoundingBox : null;
     var rootAbs = "absoluteBoundingBox" in root && root.absoluteBoundingBox ? root.absoluteBoundingBox : null;
+    var size = readNodeSize(node, abs);
+    var local = readLocalPosition(node, size);
+    if (parentModel && local) {
+      return {
+        x: round(local.x, 2),
+        y: round(local.y, 2),
+        width: size.width,
+        height: size.height,
+        absoluteX: typeof parentModel.absoluteX === "number" ? round(parentModel.absoluteX + local.x, 2) : abs ? abs.x : local.x,
+        absoluteY: typeof parentModel.absoluteY === "number" ? round(parentModel.absoluteY + local.y, 2) : abs ? abs.y : local.y
+      };
+    }
+    if (!parentModel && (size.width || size.height)) {
+      return {
+        x: 0,
+        y: 0,
+        width: size.width,
+        height: size.height,
+        absoluteX: abs ? abs.x : local ? local.x : 0,
+        absoluteY: abs ? abs.y : local ? local.y : 0
+      };
+    }
     if (!abs) {
       return {
         x: 0,
         y: 0,
-        width: "width" in node ? numberOrZero(node.width) : 0,
-        height: "height" in node ? numberOrZero(node.height) : 0
+        width: size.width,
+        height: size.height
       };
     }
     var baseX = parentModel ? parentModel.absoluteX : rootAbs ? rootAbs.x : abs.x;
@@ -2989,6 +3069,34 @@
       absoluteY: abs.y
     };
     return result;
+  }
+
+  function readNodeSize(node, abs) {
+    var width = "width" in node && typeof node.width === "number" ? node.width : abs ? abs.width : 0;
+    var height = "height" in node && typeof node.height === "number" ? node.height : abs ? abs.height : 0;
+    return {
+      width: round(width, 2),
+      height: round(height, 2)
+    };
+  }
+
+  function readLocalPosition(node, size) {
+    if (typeof node.x === "number" || typeof node.y === "number") {
+      return {
+        x: numberOrZero(node.x),
+        y: numberOrZero(node.y)
+      };
+    }
+    var matrix = readTransformMatrix(node, "relativeTransform");
+    if (matrix) {
+      var originX = numberOrZero(size && size.width) / 2;
+      var originY = numberOrZero(size && size.height) / 2;
+      return {
+        x: numberOrZero(matrix[0][2]) - originX + numberOrZero(matrix[0][0]) * originX + numberOrZero(matrix[0][1]) * originY,
+        y: numberOrZero(matrix[1][2]) - originY + numberOrZero(matrix[1][0]) * originX + numberOrZero(matrix[1][1]) * originY
+      };
+    }
+    return null;
   }
 
   function normalizeTransition(transition) {

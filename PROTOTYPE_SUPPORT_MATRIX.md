@@ -72,8 +72,8 @@ The export report includes a `prototypeReactions` array with the raw interaction
 | Slide in / slide out | Supported approximation | CSS transform translate |
 | Smart Animate position | Supported | Destination layer starts at source position, then `translate()` returns to final state |
 | Smart Animate size | Supported approximation | Destination layer starts at source scale, then `scale()` returns to final state |
-| Smart Animate rotation | Supported | Destination layer starts at source rotation, then `rotate()` returns to final state |
-| Smart Animate opacity | Supported | Destination layer interpolates from source opacity to final opacity |
+| Smart Animate rotation | Supported | Destination layer starts at source rotation, then returns to final state while preserving the layer's Figma base transform |
+| Smart Animate opacity | Supported | Destination layer interpolates from source opacity to final opacity while preserving static Figma opacity in the final CSS state |
 | Smart Animate solid fill color | Supported | Destination layer interpolates from source fill to final `background-color` |
 | Smart Animate corner radius | Supported | Destination layer interpolates from source radius to final radius |
 | Custom cubic bezier easing | Supported | CSS `cubic-bezier()` |
@@ -112,7 +112,7 @@ Renamed assets are stored in the export manifest with both `defaultFilename` and
 
 PNG/image file assets keep `box-shadow: none`; Figma effects such as drop shadow are emitted on the Figma layer wrapper. Generated markup follows Figma layer panel order, while CSS `z-index` preserves the visual stack.
 
-Every ZIP export includes shared theme assets at `assets/motion-figma-gsap-runtime.css` and `assets/motion-figma-gsap-runtime.js`. Copy Code mode includes the same runtime/base CSS inline. Repeated CSS declarations are grouped across similar generated layers to avoid rewriting identical text/image style properties.
+Every ZIP export includes shared theme assets at `assets/motion-figma-gsap-runtime.css` and `assets/motion-figma-gsap-runtime.js`. Copy Code mode includes the same runtime/base CSS inline. Repeated CSS declarations are grouped across similar generated layers to avoid rewriting identical text/image style properties. Layer transform/opacity output is based on the selected Figma node properties, including transform matrix fallback when `node.rotation` is unavailable.
 
 ## Design Rules for Reliable Export
 

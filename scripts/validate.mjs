@@ -315,6 +315,8 @@ const renamedResponsiveResult = await runResponsiveFrameSmokeTest(code, ui, {
   }
 });
 assertRenamedResponsiveExport(renamedResponsiveResult, defaultRenameAsset.defaultFilename);
+const transformOpacityResult = await runTransformOpacitySmokeTest(code, ui);
+assertTransformOpacityExport(transformOpacityResult);
 
 console.log("Validation passed.");
 
@@ -677,6 +679,100 @@ async function runResponsiveFrameSmokeTest(code, ui, extraSettings = {}) {
   return messages.find((message) => message.type === "export-result");
 }
 
+async function runTransformOpacitySmokeTest(code, ui) {
+  let uiHandler = null;
+  const messages = [];
+  const angle = 12 * Math.PI / 180;
+  const width = 120;
+  const height = 80;
+  const desiredX = 64;
+  const desiredY = 32;
+  const matrixA = Math.cos(angle);
+  const matrixB = Math.sin(angle);
+  const matrixC = -Math.sin(angle);
+  const matrixD = Math.cos(angle);
+  const matrixTx = desiredX + width / 2 - (matrixA * width / 2 + matrixC * height / 2);
+  const matrixTy = desiredY + height / 2 - (matrixB * width / 2 + matrixD * height / 2);
+  const rotatedLayer = node("30:2", "Rotated feature asset", "RECTANGLE", 150, 240, 138, 104, {
+    rotation: undefined,
+    relativeTransform: [
+      [matrixA, matrixC, matrixTx],
+      [matrixB, matrixD, matrixTy]
+    ],
+    width,
+    height,
+    opacity: 0.42
+  });
+  const rootFrame = node("30:1", "Transform Accuracy", "FRAME", 100, 200, 400, 240, {
+    parent: { type: "PAGE" },
+    children: [rotatedLayer]
+  });
+  rotatedLayer.parent = rootFrame;
+
+  const context = {
+    __html__: ui,
+    console,
+    setTimeout,
+    clearTimeout,
+    Uint8Array,
+    Date,
+    JSON,
+    Object,
+    Array,
+    String,
+    Number,
+    Boolean,
+    RegExp,
+    Math,
+    Error,
+    isFinite,
+    figma: {
+      editorType: "figma",
+      mixed: Symbol("mixed"),
+      currentPage: { selection: [rootFrame] },
+      ui: {
+        postMessage(message) {
+          messages.push(message);
+        },
+        set onmessage(handler) {
+          uiHandler = handler;
+        },
+        get onmessage() {
+          return uiHandler;
+        }
+      },
+      showUI() {
+        context.__showUICalled = true;
+      },
+      on() {},
+      notify() {},
+      closePlugin() {},
+      async getNodeByIdAsync(id) {
+        return id === rootFrame.id ? rootFrame : null;
+      },
+      getImageByHash() {
+        return null;
+      }
+    },
+    __showUICalled: false
+  };
+  vm.createContext(context);
+  new vm.Script(code).runInContext(context);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert(typeof uiHandler === "function", "Plugin did not register UI message handler for transform opacity smoke test");
+  uiHandler({
+    type: "export",
+    settings: {
+      sectionName: "Transform Accuracy",
+      filePrefix: "transform-accuracy",
+      includeVideoFallback: false
+    }
+  });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  return messages.find((message) => message.type === "export-result");
+}
+
 function makeVariant(id, name, x, destinationId, triggerType, delaySeconds) {
   const variant = node(id, name, "COMPONENT", x, 0, 320, 180, {
     variantProperties: { "Property 1": name.split("=").pop() },
@@ -863,6 +959,24 @@ function assertRenamedResponsiveExport(exportMessage, originalDefaultFilename) {
   assert(js.content.includes("setupScrollProgressAnimation"), "Copy JS should include scroll progress runtime after Save and Run");
   assert(manifest.scrollAnimation?.mode === "pin-sequence", "Save and Run should regenerate with selected Pin Sequence mode");
   assert(liquid.content.includes("data-fts-scroll-mode=\"pin-sequence\""), "Copy Code Liquid should include selected Pin Sequence mode");
+}
+
+function assertTransformOpacityExport(exportMessage) {
+  assert(exportMessage, "Transform opacity export did not produce a result");
+  const css = exportMessage.files.find((file) => /^assets\/.*\.css$/.test(file.path));
+  const js = exportMessage.files.find((file) => /^assets\/.*\.js$/.test(file.path));
+  const liquid = exportMessage.files.find((file) => /^sections\/.*\.liquid$/.test(file.path));
+  assert(css.content.includes(".fts-transform-accuracy .n-30_2"), "Transform smoke CSS missing rotated layer rule");
+  assert(css.content.includes("left: 16%;"), "Rotated layer should use relativeTransform x instead of absoluteBoundingBox x");
+  assert(css.content.includes("top: 13.3333%;"), "Rotated layer should use relativeTransform y instead of absoluteBoundingBox y");
+  assert(css.content.includes("width: 30%;"), "Rotated layer should use node width instead of rotated absoluteBoundingBox width");
+  assert(css.content.includes("height: 33.3333%;"), "Rotated layer should use node height instead of rotated absoluteBoundingBox height");
+  assert(css.content.includes("transform: rotate(12deg);"), "Generated CSS should read rotation from relativeTransform when node.rotation is unavailable");
+  assert(css.content.includes("opacity: 0.42;"), "Generated CSS should preserve selected layer opacity");
+  assert(js.content.includes("computedTransform"), "Runtime should remember stylesheet/computed base transform before Smart Animate playback");
+  assert(js.content.includes("composeMotionTransform"), "Runtime should compose motion deltas with the base Figma transform");
+  assert(js.content.includes("transform: baseTransform(original) || 'none'"), "GSAP runtime should tween back to the selected layer base transform instead of rotation 0");
+  assert(liquid.content.includes("\"name\": \"Transform Accuracy\""), "Transform smoke schema name should follow plugin section name");
 }
 
 function read(path) {

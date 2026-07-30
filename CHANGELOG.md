@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3
+
+- Preserves selected Figma layer transform and opacity more accurately by reading Figma transform matrices, using unrotated node bounds for positioned layers, and composing Smart Animate transform deltas with each layer's existing CSS/base transform.
+- Updates GSAP Smart Animate playback so rotated destination layers tween back to their own Figma base transform instead of being reset to rotation 0.
+
 ## 0.1.2
 
 - Restores the previous Smart Animate runtime used before the source-layer/static-hold playback experiments, while keeping layer stacking, rotation/text, shared runtime assets, and grouped CSS updates.

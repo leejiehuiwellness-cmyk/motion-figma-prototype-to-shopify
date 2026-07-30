@@ -276,7 +276,7 @@ motion-figma-prototype-to-shopify-report.json</code></pre>
           </article>
           <article>
             <h3>Smart Animate diffs</h3>
-            <p>Matched destination layers start from source geometry, then move/scale/rotate/fade into the final Shopify state for smoother Figma Play-style motion. If GSAP is already loaded by the theme, Motion uses gsap.timeline(); otherwise it uses the built-in fallback.</p>
+            <p>Matched destination layers start from source geometry, then move/scale/rotate/fade into the final Shopify state for smoother Figma Play-style motion. Motion composes the animation delta with each layer's Figma base transform and opacity, so rotated or semi-transparent layers stay aligned. If GSAP is already loaded by the theme, Motion uses gsap.timeline(); otherwise it uses the built-in fallback.</p>
           </article>
           <article>
             <h3>Prototype routes</h3>
@@ -297,7 +297,7 @@ motion-figma-prototype-to-shopify-report.json</code></pre>
           </article>
           <article>
             <h3>Cleaner CSS</h3>
-            <p>Repeated style properties are grouped across similar layers, while each layer keeps unique position, size, rotation, and z-index.</p>
+            <p>Repeated style properties are grouped across similar layers, while each layer keeps unique position, size, transform, opacity, and z-index.</p>
           </article>
         </div>
       </section>
