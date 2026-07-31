@@ -53,6 +53,15 @@ Product Hero
   product.add_to_cart
 ```
 
+Button and video naming:
+
+```text
+Button / CTA / Buy now
+hero.video
+```
+
+Button components and `product.add_to_cart` layers keep the selected Figma button width, height, radius, fill, and Label/Text property where available. Layers ending in `.video`, `.mp4`, `.webm`, or `.mov` render a Shopify video placeholder with `<!-- put your video link here -->` in Copy Code.
+
 ## 3. Add Figma Prototype Interactions
 
 The plugin reads Figma prototype interaction details from the selected flow:

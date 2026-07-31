@@ -24,6 +24,7 @@ Use this checklist to get Motion: Figma Prototype to Shopify running locally tod
 - Scroll animation modes: Enter Once, Enter Replay, Infinite Loop, Scroll Scrub, and Pin Sequence
 - Assets tab can rename exported image/SVG files; Save and Run regenerates Copy Code, Copy CSS, Copy JS, ZIP, manifest, and report
 - SVG force names include `home_solution.svg`; PNG/image shadows stay on the Figma layer wrapper while inner file assets remain shadow-free
+- Button components keep the Figma button box size, and `.video`/`.mp4`/`.webm`/`.mov` layer names render a video placeholder with `put your video link here`
 - Shared runtime assets are packaged at `assets/motion-figma-gsap-runtime.css` and `assets/motion-figma-gsap-runtime.js`; Copy Code mode inlines the same code
 - Generated CSS groups repeated declarations and preserves layer stack, rotation, and text style details
 - GitHub repo created: https://github.com/leejiehuiwellness-cmyk/motion-figma-prototype-to-shopify

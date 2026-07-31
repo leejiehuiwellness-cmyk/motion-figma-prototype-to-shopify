@@ -87,6 +87,14 @@ Designers often build Shopify sections as components or variants. Motion support
 - The export report records both the selected layer and the actual export root so builders can verify the component boundary before pasting into Shopify.
 - Generated exports include shared theme assets at `assets/motion-figma-gsap-runtime.css` and `assets/motion-figma-gsap-runtime.js`; Copy Code mode inlines that runtime code, while ZIP/external mode exposes the files for Shopify theme assets.
 
+## Button Components
+
+Motion detects button components and instances from names such as `Button`, `CTA`, `Buy now`, and from `product.add_to_cart` bindings. Generated button/form controls use the Figma layer's width, height, corner radius, fill, and text/component `Label` property so the Shopify button follows the selected Figma button size.
+
+## Video Placeholders
+
+Name a layer with `.video`, `.mp4`, `.webm`, or `.mov` to generate a Shopify video placeholder. Copy Code includes `<!-- put your video link here -->` and a sample commented `<source>` line for your Shopify CDN video URL.
+
 ## Shopify Theme Font Inheritance
 
 Generated text inherits Shopify theme font variables such as `--font-body-family`, `--font-body-style`, `--font-body-weight`, `--font-heading-family`, `--font-heading-style`, and `--font-heading-weight`. Motion keeps the Figma text sizing and uses Shopify's `--font-body-scale` when the theme provides it, without adding extra theme-style settings to the section schema.
@@ -115,6 +123,8 @@ Rename Figma layers to these names to generate Liquid bindings:
 | `product.image` | Renders featured product image |
 | `product.url` | Creates a product link |
 | `product.add_to_cart` | Creates a product form and add-to-cart button |
+| `Button`, `CTA`, `Buy now` | Creates a button component sized from the Figma layer box |
+| `hero.video`, `.mp4`, `.webm`, `.mov` | Creates a video placeholder with `<!-- put your video link here -->` |
 | `collection.grid` | Loops over selected collection products |
 | `menu.main` | Loops over selected menu links |
 | `cart.count` | Renders cart item count |

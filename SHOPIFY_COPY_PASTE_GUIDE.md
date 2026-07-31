@@ -19,6 +19,8 @@ For a ready-made smoke test before running the plugin in Figma, use `examples/ex
 
 For SVG export, rename the Figma layer with a clean filename such as `home_solution.svg`. Motion keeps the `.svg` intent but generates a Shopify-safe asset name such as `home-solution`.
 
+For video placeholders, rename the Figma layer with `.video`, `.mp4`, `.webm`, or `.mov`. Copy Code will render a `<video>` block and include `<!-- put your video link here -->` so you can paste your Shopify CDN video URL into the commented `<source>` line.
+
 ## B. In Shopify Admin
 
 1. Go to Online Store > Themes.
@@ -90,6 +92,7 @@ After saving, Shopify should render:
 - The selected Figma section layout.
 - The selected component/instance layout when a designer builds the Shopify section as a Figma component.
 - Liquid product/collection/menu/cart data for named layers.
+- Button components and `product.add_to_cart` layers sized from the selected Figma button box.
 - Inline CSS and JavaScript inside the generated Liquid section.
 - Font family, font style, and font weight inherited from the Shopify theme.
 - Supported Figma prototype animation such as click, hover, delay, overlay, and Smart Animate-style diffs.

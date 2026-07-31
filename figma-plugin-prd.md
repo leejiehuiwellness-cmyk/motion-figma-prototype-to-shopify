@@ -569,6 +569,8 @@ type ShopifyExportModel = {
 - Given a prototype route that loops between variants/components/frames, when exported, then the Motion tab, manifest, and report show the loop.
 - Given an `AFTER_TIMEOUT` or Infinite Loop route, when Shopify runtime plays it, then playback follows the compiled Figma route action/diffs, preloads hidden image/SVG assets before timed playback, and does not flash a refreshed frame between loop cycles.
 - Given GSAP already exists on the Shopify theme, when Smart Animate matched layers play, then Motion uses GSAP timeline playback with a no-dependency fallback.
+- Given a Figma button component/instance or `product.add_to_cart` layer, when exported, then the generated Shopify button/form uses the selected layer's width, height, radius, fill, and component Label/Text property when available.
+- Given a layer named with `.video`, `.mp4`, `.webm`, or `.mov`, when exported, then Copy Code renders a video placeholder and includes `<!-- put your video link here -->` for the Shopify video URL.
 - Given image layer drop shadows in Figma, when exported, then the shadow is emitted on the generated layer wrapper and the inner image file asset remains shadow-free.
 - Given repeated text/image styles across multiple layers, when exported, then common CSS properties are grouped and each layer keeps only its unique position, size, rotation, and z-index declarations.
 - Given a ZIP export, when generated, then `assets/motion-figma-gsap-runtime.css` and `assets/motion-figma-gsap-runtime.js` are included and listed in manifest/report files.

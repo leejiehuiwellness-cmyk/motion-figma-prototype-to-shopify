@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var PLUGIN_VERSION = "0.1.4";
+  var PLUGIN_VERSION = "0.1.5";
   var SHARED_RUNTIME_JS_ASSET = "motion-figma-gsap-runtime.js";
   var SHARED_RUNTIME_CSS_ASSET = "motion-figma-gsap-runtime.css";
   var MAX_ASSETS = 60;
@@ -572,12 +572,16 @@
 
     var bounds = getRelativeBounds(node, parentModel, root);
     var transform = readTransform(node);
+    var binding = detectBinding(node.name || "");
+    var componentProperties = cloneSimple(node.componentProperties || null);
+    var media = detectMediaIntent(node.name || "");
     var model = {
       id: cleanNodeId(node.id),
       figmaId: node.id,
       name: safeName(node.name),
       type: node.type,
       variantProperties: cloneSimple(node.variantProperties || null),
+      componentProperties: componentProperties,
       flowStartingPoints: cloneSimple(node.flowStartingPoints || []),
       isMask: Boolean(node.isMask),
       clipsContent: Boolean(node.clipsContent),
@@ -603,7 +607,9 @@
       effects: readEffects(node),
       cornerRadius: readCornerRadius(node),
       text: readText(node),
-      binding: detectBinding(node.name || ""),
+      binding: binding,
+      isButton: detectButtonIntent(node, binding, componentProperties),
+      media: media,
       reactions: readReactions(node, ctx),
       asset: null,
       children: []
@@ -1106,6 +1112,7 @@
   }
 
   async function maybeExportNodeAsset(node, model, ctx) {
+    if (model && model.media && model.media.kind === "video") return null;
     if (ctx.assets.length >= MAX_ASSETS) return detectAssetReference(node, model, ctx);
 
     if (shouldForceSvgExport(node, model)) {
@@ -1248,6 +1255,7 @@
   }
 
   function detectAssetReference(node, model, ctx) {
+    if (model && model.media && model.media.kind === "video") return null;
     var imageHash = firstImageHash(node);
     if (shouldForceSvgExport(node, model)) {
       var forcedSvgFilename = normalizeDefaultAssetFilename((ctx.assetFilePrefix || ctx.sectionType) + "-" + assetLayerSlug(model.name, "icon") + "-" + cleanNodeId(model.figmaId) + ".svg", "svg");
@@ -1544,6 +1552,7 @@
 
     var tag = chooseTag(node);
     var attrs = renderAttrs(node);
+    if (tag === "button") attrs += " type=\"button\"";
     var content = renderNodeContent(node, ctx);
     return indent("<" + tag + attrs + ">" + content + "</" + tag + ">", node.depth);
   }
@@ -1552,6 +1561,10 @@
     if (node.binding) {
       var dynamicValue = renderBinding(node.binding, node, ctx);
       if (dynamicValue) return dynamicValue;
+    }
+
+    if (node.media && node.media.kind === "video") {
+      return renderVideoPlaceholder(node);
     }
 
     if (node.asset && (node.asset.kind === "image" || node.asset.kind === "image-placeholder")) {
@@ -1566,10 +1579,24 @@
       return escapeHtml(node.text.characters);
     }
 
+    if (node.isButton) {
+      var buttonLabel = buttonLabelFromNode(node, "");
+      if (buttonLabel) return escapeHtml(buttonLabel);
+    }
+
     var children = childrenForMarkup(node);
     return children.map(function (child) {
       return "\n" + renderNode(child, ctx);
     }).join("") + (children.length ? "\n" + spaces(node.depth * 2) : "");
+  }
+
+  function renderVideoPlaceholder(node) {
+    return "\n" + indent([
+      "<video class=\"fts-node__video\" data-fts-video playsinline muted loop preload=\"metadata\">",
+      "  <!-- put your video link here -->",
+      "  <!-- <source src=\"https://cdn.shopify.com/videos/c/o/v/your-video.mp4\" type=\"video/mp4\"> -->",
+      "</video>"
+    ].join("\n"), node.depth + 1) + "\n" + spaces(node.depth * 2);
   }
 
   function renderCollectionGrid(node, ctx) {
@@ -1614,7 +1641,7 @@
   }
 
   function renderAddToCart(node, ctx) {
-    var label = node.text && node.text.characters ? escapeHtml(node.text.characters) : "Add to cart";
+    var label = escapeHtml(buttonLabelFromNode(node, "Add to cart"));
     var lines = [];
     lines.push("<product-form" + renderAttrs(node) + ">");
     lines.push("  {% form 'product', fts_product %}");
@@ -1687,7 +1714,13 @@
   }
 
   function renderAttrs(node) {
-    return " class=\"fts-node " + node.className + "\" data-fts-node=\"" + node.id + "\" data-figma-node-id=\"" + escapeAttr(node.figmaId) + "\"";
+    var classes = ["fts-node", node.className];
+    if (node.isButton) classes.push("fts-button");
+    if (node.media && node.media.kind === "video") classes.push("fts-video");
+    var attrs = " class=\"" + classes.join(" ") + "\" data-fts-node=\"" + node.id + "\" data-figma-node-id=\"" + escapeAttr(node.figmaId) + "\"";
+    if (node.isButton) attrs += " data-fts-role=\"button\"";
+    if (node.media && node.media.kind) attrs += " data-fts-media=\"" + escapeAttr(node.media.kind) + "\"";
+    return attrs;
   }
 
   function chooseTag(node) {
@@ -1696,7 +1729,7 @@
       if (/heading|title|headline|h1/i.test(node.name)) return "h2";
       return "span";
     }
-    if (/button|cta|add to cart|buy/i.test(node.name)) return "button";
+    if (node.isButton) return "button";
     if (/nav|menu/i.test(node.name)) return "nav";
     if (/card|product/i.test(node.name)) return "article";
     if (node.depth === 0) return "div";
@@ -1713,9 +1746,15 @@
       "[data-motion-figma-prototype-to-shopify] { display: block; }",
       "[data-motion-figma-prototype-to-shopify] .fts-node { min-width: 0; transform-origin: center center; backface-visibility: hidden; }",
       "[data-motion-figma-prototype-to-shopify] .fts-node__asset { box-shadow: none; filter: none; }",
+      "[data-motion-figma-prototype-to-shopify] .fts-node__video { display: block; width: 100%; height: 100%; object-fit: cover; }",
       "[data-motion-figma-prototype-to-shopify] img { display: block; width: 100%; height: 100%; object-fit: cover; }",
       "[data-motion-figma-prototype-to-shopify] a { color: inherit; text-decoration: none; }",
       "[data-motion-figma-prototype-to-shopify] button { font: inherit; color: inherit; cursor: pointer; border: 0; background: transparent; }",
+      "[data-motion-figma-prototype-to-shopify] .fts-button { cursor: pointer; }",
+      "[data-motion-figma-prototype-to-shopify] button.fts-button { display: flex; align-items: center; justify-content: center; padding: 0; text-align: center; }",
+      "[data-motion-figma-prototype-to-shopify] product-form.fts-button { display: block; }",
+      "[data-motion-figma-prototype-to-shopify] product-form.fts-button form { width: 100%; height: 100%; margin: 0; }",
+      "[data-motion-figma-prototype-to-shopify] product-form.fts-button button { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 0; border-radius: inherit; background: inherit; color: inherit; text-align: center; }",
       "[data-motion-figma-prototype-to-shopify][data-fts-scroll-mode=\"pin-sequence\"].is-fts-pinned-fallback { min-height: max(var(--fts-pin-distance, 1600px), 100vh); }",
       "[data-motion-figma-prototype-to-shopify][data-fts-scroll-mode=\"pin-sequence\"].is-fts-pinned-fallback .fts-stage { position: sticky; top: 0; }",
       ".fts-overlay[hidden] { display: none; }",
@@ -1892,7 +1931,7 @@
       lines.push("  white-space: pre-wrap;");
       lines.push("  overflow-wrap: anywhere;");
     }
-    if (node.asset) {
+    if (node.asset || (node.media && node.media.kind === "video")) {
       lines.push("  overflow: hidden;");
     }
     if (hasMotionTarget(node)) {
@@ -3205,6 +3244,65 @@
       }
     }
     return null;
+  }
+
+  function detectButtonIntent(node, binding, componentProperties) {
+    if (binding && binding.key === "product.add_to_cart") return true;
+    var name = String(node && node.name || "");
+    if (/(^|[\s._/-])(button|btn|cta|add\s*to\s*cart|buy\s*now|buy|submit|checkout)(?:$|[\s._/-])/i.test(name)) return true;
+    if (!node || ["COMPONENT", "INSTANCE", "COMPONENT_SET"].indexOf(node.type) === -1) return false;
+    var props = componentPropertiesText(componentProperties).toLowerCase();
+    return /(button|btn|cta|add to cart|buy now|submit|checkout)/i.test(props);
+  }
+
+  function detectMediaIntent(name) {
+    var value = String(name || "").trim();
+    if (/\.(video|mp4|webm|mov)$/i.test(value)) {
+      return {
+        kind: "video",
+        source: "layer-name"
+      };
+    }
+    return null;
+  }
+
+  function buttonLabelFromNode(node, fallback) {
+    if (!node) return fallback || "";
+    if (node.text && node.text.characters) return node.text.characters;
+    var propLabel = componentPropertyLabel(node.componentProperties);
+    if (propLabel) return propLabel;
+    var childLabel = "";
+    walk(node, function (child) {
+      if (!childLabel && child !== node && child.text && child.text.characters) childLabel = child.text.characters;
+    });
+    return childLabel || fallback || "";
+  }
+
+  function componentPropertyLabel(componentProperties) {
+    if (!componentProperties || typeof componentProperties !== "object") return "";
+    var keys = Object.keys(componentProperties);
+    var preferred = keys.filter(function (key) {
+      return /(label|text|title|copy|button)/i.test(key);
+    }).concat(keys);
+    for (var i = 0; i < preferred.length; i += 1) {
+      var value = componentPropertyValue(componentProperties[preferred[i]]);
+      if (typeof value === "string" && value.trim() && !/^(true|false)$/i.test(value.trim())) return value.trim();
+    }
+    return "";
+  }
+
+  function componentPropertiesText(componentProperties) {
+    if (!componentProperties || typeof componentProperties !== "object") return "";
+    return Object.keys(componentProperties).map(function (key) {
+      return key + " " + componentPropertyValue(componentProperties[key]);
+    }).join(" ");
+  }
+
+  function componentPropertyValue(value) {
+    if (value == null) return "";
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
+    if (typeof value === "object" && "value" in value) return componentPropertyValue(value.value);
+    return "";
   }
 
   function firstImageHash(node) {

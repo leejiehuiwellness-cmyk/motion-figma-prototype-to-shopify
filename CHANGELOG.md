@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.5
+
+- Detects Figma button components/instances from layer names, Shopify `product.add_to_cart` bindings, and common component properties such as Label/Text, then marks them with `fts-button` and sizes the generated button/form controls from the Figma layer box.
+- Supports layer names ending in `.video`, `.mp4`, `.webm`, or `.mov` as Shopify video placeholders and includes `<!-- put your video link here -->` in Copy Code instead of exporting the layer as a PNG.
+
 ## 0.1.4
 
 - Fixes loop flicker in generated Shopify runtime by registering `AFTER_TIMEOUT` prototype routes without requiring a rendered trigger node, preloading hidden variant image/SVG assets before timed playback, and making Infinite Loop fallback follow the compiled Figma route action/diffs instead of stepping through variants by layer order.

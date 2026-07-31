@@ -107,6 +107,7 @@ Motion builds a route graph from selected frame/component/component-set/variant 
 | `Logo [svg]` | Attempts SVG export for that layer |
 | `Logo #svg` | Attempts SVG export for that layer |
 | `Logo export=svg` | Attempts SVG export for that layer |
+| `hero.video`, `.mp4`, `.webm`, `.mov` | Renders a Shopify video placeholder in Copy Code with `<!-- put your video link here -->` |
 
 Renamed assets are stored in the export manifest with both `defaultFilename` and `shopifyFilename`. After users click Save and Run, Copy Code, Copy CSS, Copy JS, ZIP files, manifest, and report are regenerated from the renamed `shopifyFilename` values.
 
@@ -122,5 +123,6 @@ Every ZIP export includes shared theme assets at `assets/motion-figma-gsap-runti
 4. Use Auto Layout when possible.
 5. Use layer names for Liquid binding.
 6. Choose the scroll animation mode before copying Shopify code.
-7. Avoid relying on prototype-only variables or conditionals in v1.
-8. For Shopify product and collection data, name layers explicitly instead of using visual labels only.
+7. Name button components clearly, for example `Button`, `CTA`, `Buy now`, or `product.add_to_cart`, so Motion can size the generated button from the Figma layer box.
+8. Avoid relying on prototype-only variables or conditionals in v1.
+9. For Shopify product and collection data, name layers explicitly instead of using visual labels only.

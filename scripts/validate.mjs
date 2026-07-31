@@ -73,6 +73,10 @@ for (const script of scripts) {
   "codeMode",
   "Copy Code",
   "assetRenames",
+  "detectButtonIntent",
+  "detectMediaIntent",
+  "fts-button",
+  "put your video link here",
   "Enter Once",
   "Enter Replay",
   "Infinite Loop",
@@ -252,6 +256,10 @@ assert(exportedLiquid.content.includes("\"name\": \"Mock Product Hero\""), "Sche
 ].forEach((needle) => {
   assert(exportedLiquid.content.includes(needle), `Exported Liquid missing ${needle}`);
 });
+assert(exportedLiquid.content.includes("data-fts-role=\"button\""), "Button component should be marked with a button role in Copy Code");
+assert(exportedLiquid.content.includes("type=\"button\">Shop now</button>"), "Button component should use the Figma component Label property as its button text");
+assert(exportedLiquid.content.includes("data-fts-media=\"video\""), "Layer names ending in .video should render a video placeholder");
+assert(exportedLiquid.content.includes("<!-- put your video link here -->"), "Video placeholder should include the requested Shopify video link comment");
 assert(!exportedLiquid.content.includes("{{ 'mock-product-hero.css' | asset_url | stylesheet_tag }}"), "Inline Copy Code should not load generated CSS as a separate asset");
 assert(!exportedLiquid.content.includes("src=\"{{ 'mock-product-hero.js' | asset_url }}\""), "Inline Copy Code should not load generated JS as a separate asset");
 assert(!exportedLiquid.content.includes("{% javascript %}"), "Inline Copy Code should use a script tag instead of Shopify javascript block");
@@ -265,6 +273,9 @@ assert(exportedCss.content.includes("max-width: none"), "Generated stage should 
 assert(exportedCss.content.includes("margin-left: calc(50% - 50vw)"), "Generated CSS should break out of Shopify page-width containers");
 assert(exportedCss.content.includes("is-fts-pinned-fallback"), "Generated CSS should include no-GSAP pin sequence fallback");
 assert(exportedCss.content.includes(".fts-node__asset { box-shadow: none; filter: none; }"), "Inner image assets should not receive the layer box-shadow");
+assert(exportedCss.content.includes(".fts-node__video { display: block; width: 100%; height: 100%; object-fit: cover; }"), "Generated CSS should size .video layers as full-cover videos");
+assert(exportedCss.content.includes("product-form.fts-button button { width: 100%; height: 100%;"), "Add-to-cart button should fill the Figma button wrapper size");
+assert(exportedCss.content.includes("button.fts-button { display: flex; align-items: center; justify-content: center;"), "Button components should render as flex-centered buttons");
 assert(/z-index:\s*\d+;/.test(exportedCss.content), "Generated CSS should preserve visual stack with z-index while markup follows layer order");
 assert(exportedCss.content.includes("font-weight: 700;"), "Generated CSS should preserve Figma text font weight while inheriting Shopify font family");
 assert(!exportedCss.content.includes("font-family: Inter"), "Generated CSS should not hard-code the Figma font family");
@@ -378,6 +389,46 @@ async function runPluginRuntimeSmokeTest(code, ui, exportSettings = {
     }],
     children: []
   };
+  const componentButtonNode = {
+    id: "2:5",
+    name: "Hero CTA Button",
+    type: "INSTANCE",
+    visible: true,
+    absoluteBoundingBox: { x: 240, y: 112, width: 220, height: 56 },
+    width: 220,
+    height: 56,
+    rotation: 0,
+    opacity: 1,
+    fills: [{ type: "SOLID", color: { r: 0.1, g: 0.42, b: 0.85 }, opacity: 1, visible: true }],
+    strokes: [],
+    effects: [],
+    cornerRadius: 14,
+    layoutMode: "NONE",
+    componentProperties: {
+      Label: { type: "TEXT", value: "Shop now" },
+      Size: { type: "VARIANT", value: "Large" }
+    },
+    reactions: [],
+    children: []
+  };
+  const videoLayerNode = {
+    id: "2:6",
+    name: "Hero Reel.video",
+    type: "RECTANGLE",
+    visible: true,
+    absoluteBoundingBox: { x: 32, y: 200, width: 300, height: 120 },
+    width: 300,
+    height: 120,
+    rotation: 0,
+    opacity: 1,
+    fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 }, opacity: 1, visible: true }],
+    strokes: [],
+    effects: [],
+    cornerRadius: 10,
+    layoutMode: "NONE",
+    reactions: [],
+    children: []
+  };
   const rootNode = {
     id: "1:2",
     name: "Product Hero Component",
@@ -402,7 +453,7 @@ async function runPluginRuntimeSmokeTest(code, ui, exportSettings = {
     primaryAxisAlignItems: "MIN",
     counterAxisAlignItems: "MIN",
     reactions: [],
-    children: [textNode, buttonNode],
+    children: [textNode, buttonNode, componentButtonNode, videoLayerNode],
     async exportAsync(settings) {
       if (settings?.format === "WEBM") throw new Error("No animated content");
       return new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
@@ -410,6 +461,8 @@ async function runPluginRuntimeSmokeTest(code, ui, exportSettings = {
   };
   textNode.parent = rootNode;
   buttonNode.parent = rootNode;
+  componentButtonNode.parent = rootNode;
+  videoLayerNode.parent = rootNode;
   const destinationNode = {
     ...rootNode,
     id: "9:1",
